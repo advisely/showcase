@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 import { CardData, BackgroundData, PresentationData } from '../types';
 
+interface ViewportInfo {
+  scrollLeft: number;
+  scrollTop: number;
+  width: number;
+  height: number;
+}
+
 interface StoreState {
   cards: CardData[];
   background: BackgroundData;
   selectedCardId: string | null;
   maximizedCardId: string | null;
   nextCardId: number;
+  viewport: ViewportInfo;
 
   // Card actions
   addCard: (card: Omit<CardData, 'id' | 'zIndex'>) => void;
@@ -22,8 +30,11 @@ interface StoreState {
   setSelectedCard: (id: string | null) => void;
   setMaximizedCard: (id: string | null) => void;
 
+  // Viewport actions
+  setViewport: (viewport: ViewportInfo) => void;
+
   // Layout actions
-  arrangeCards: (type: 'circle' | 'curve' | 'grid' | 'line', containerSize: { width: number; height: number }) => void;
+  arrangeCards: (type: 'circle' | 'curve' | 'grid' | 'line') => void;
 
   // Persistence
   savePresentation: () => void;
@@ -37,6 +48,7 @@ export const useStore = create<StoreState>((set, get) => ({
   selectedCardId: null,
   maximizedCardId: null,
   nextCardId: 0,
+  viewport: { scrollLeft: 0, scrollTop: 0, width: 1200, height: 800 },
 
   addCard: (card) => {
     const state = get();
@@ -94,15 +106,22 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ maximizedCardId: id });
   },
 
-  arrangeCards: (type, containerSize) => {
+  setViewport: (viewport) => {
+    set({ viewport });
+  },
+
+  arrangeCards: (type) => {
     const state = get();
     const cards = [...state.cards];
+    const { viewport } = state;
+
+    // Calculate visible viewport center
+    const centerX = viewport.scrollLeft + viewport.width / 2;
+    const centerY = viewport.scrollTop + viewport.height / 2;
 
     switch (type) {
       case 'circle': {
-        const centerX = containerSize.width / 2;
-        const centerY = containerSize.height / 2;
-        const radius = Math.min(centerX, centerY) * 0.6;
+        const radius = Math.min(viewport.width, viewport.height) * 0.3;
         const angleStep = (2 * Math.PI) / cards.length;
 
         cards.forEach((card, index) => {
@@ -116,10 +135,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
       case 'curve': {
         const padding = 100;
+        const startX = viewport.scrollLeft + padding;
+        const endX = viewport.scrollLeft + viewport.width - padding;
+
         cards.forEach((card, index) => {
           const t = index / (cards.length - 1 || 1);
-          const x = padding + (containerSize.width - 2 * padding) * t;
-          const y = containerSize.height / 2 + Math.sin(t * Math.PI) * (containerSize.height / 3) - card.size.height / 2;
+          const x = startX + (endX - startX) * t;
+          const y = centerY + Math.sin(t * Math.PI) * (viewport.height / 4) - card.size.height / 2;
           card.position = { x, y };
         });
         break;
@@ -134,8 +156,8 @@ export const useStore = create<StoreState>((set, get) => ({
 
         const totalWidth = cols * (cardWidth + spacing);
         const totalHeight = rows * (cardHeight + spacing);
-        const startX = (containerSize.width - totalWidth) / 2;
-        const startY = (containerSize.height - totalHeight) / 2;
+        const startX = centerX - totalWidth / 2;
+        const startY = centerY - totalHeight / 2;
 
         cards.forEach((card, index) => {
           const col = index % cols;
@@ -149,11 +171,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
       case 'line': {
         const padding = 100;
-        const spacing = (containerSize.width - 2 * padding) / (cards.length - 1 || 1);
+        const startX = viewport.scrollLeft + padding;
+        const endX = viewport.scrollLeft + viewport.width - padding;
+        const spacing = (endX - startX) / (cards.length - 1 || 1);
 
         cards.forEach((card, index) => {
-          const x = padding + index * spacing;
-          const y = containerSize.height / 2 - card.size.height / 2;
+          const x = startX + index * spacing;
+          const y = centerY - card.size.height / 2;
           card.position = { x, y };
         });
         break;

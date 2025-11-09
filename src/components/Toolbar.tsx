@@ -18,8 +18,6 @@ export default function Toolbar({ onAddMedia }: ToolbarProps) {
   const bgColorInputRef = useRef<HTMLInputElement>(null);
   const loadInputRef = useRef<HTMLInputElement>(null);
 
-  const playfieldSize = { width: 3000, height: 3000 };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
@@ -86,28 +84,28 @@ export default function Toolbar({ onAddMedia }: ToolbarProps) {
 
           <div className="flex gap-2 ml-4">
             <button
-              onClick={() => arrangeCards('circle', playfieldSize)}
+              onClick={() => arrangeCards('circle')}
               className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
               title="Arrange in Circle"
             >
               <span>⭕</span>
             </button>
             <button
-              onClick={() => arrangeCards('curve', playfieldSize)}
+              onClick={() => arrangeCards('curve')}
               className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
               title="Arrange in Curve"
             >
               <span>〰️</span>
             </button>
             <button
-              onClick={() => arrangeCards('grid', playfieldSize)}
+              onClick={() => arrangeCards('grid')}
               className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
               title="Arrange in Grid"
             >
               <span>▦</span>
             </button>
             <button
-              onClick={() => arrangeCards('line', playfieldSize)}
+              onClick={() => arrangeCards('line')}
               className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
               title="Arrange in Line"
             >
