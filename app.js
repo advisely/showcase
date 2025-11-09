@@ -1,5 +1,5 @@
-// FlexPresent - Flexible Presentation App
-class FlexPresent {
+// Showcase - Flexible Presentation App
+class Showcase {
     constructor() {
         this.cards = [];
         this.currentCardId = 0;
@@ -644,7 +644,7 @@ class FlexPresent {
         }
 
         // Add README for user guidance
-        const readme = `# FlexPresent Presentation Package
+        const readme = `# Showcase Presentation Package
 
 This folder contains your presentation with external media files.
 
@@ -654,7 +654,7 @@ This folder contains your presentation with external media files.
 
 ## To use on another computer:
 1. Keep this entire folder together
-2. Open FlexPresent
+2. Open Showcase
 3. Click "Load" and select presentation.json
 4. Make sure the media/ folder is in the same directory
 
@@ -878,11 +878,11 @@ Generated: ${new Date(timestamp).toLocaleString()}
                 mediaSrc: card.dataset.mediaSrc
             }))
         };
-        localStorage.setItem('flexPresent_presentation', JSON.stringify(data));
+        localStorage.setItem('showcase_presentation', JSON.stringify(data));
     }
 
     loadFromLocalStorage() {
-        const savedData = localStorage.getItem('flexPresent_presentation');
+        const savedData = localStorage.getItem('showcase_presentation');
         if (!savedData) return;
 
         try {
@@ -909,5 +909,5 @@ Generated: ${new Date(timestamp).toLocaleString()}
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new FlexPresent();
+    window.app = new Showcase();
 });
