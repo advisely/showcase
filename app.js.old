@@ -1,5 +1,5 @@
-// FlexPresent - Flexible Presentation App
-class FlexPresent {
+// Showcase - Flexible Presentation App
+class Showcase {
     constructor() {
         this.cards = [];
         this.currentCardId = 0;
@@ -619,5 +619,5 @@ class FlexPresent {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new FlexPresent();
+    window.app = new Showcase();
 });
