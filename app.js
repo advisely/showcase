@@ -160,23 +160,41 @@ class FlexPresent {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
+        // Store files and show modal
         this.pendingFiles = files;
         this.showOrientationModal();
     }
 
     showOrientationModal() {
+        // Force reflow to ensure proper modal display
         this.orientationModal.classList.remove('hidden');
+        this.orientationModal.offsetHeight; // Trigger reflow
     }
 
     closeOrientationModal() {
+        // Ensure modal is hidden and state is reset
         this.orientationModal.classList.add('hidden');
         this.pendingFiles = [];
+
+        // Reset file input properly
         this.fileInput.value = '';
+
+        // Force reflow to ensure changes are applied
+        this.orientationModal.offsetHeight;
     }
 
     selectOrientation(orientation) {
+        if (this.pendingFiles.length === 0) {
+            this.closeOrientationModal();
+            return;
+        }
+
         this.selectedOrientation = orientation;
+
+        // Create cards from pending files
         this.pendingFiles.forEach(file => this.createCard(file, orientation));
+
+        // Close modal after creating cards
         this.closeOrientationModal();
     }
 
