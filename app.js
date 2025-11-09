@@ -1,0 +1,623 @@
+// FlexPresent - Flexible Presentation App
+class FlexPresent {
+    constructor() {
+        this.cards = [];
+        this.currentCardId = 0;
+        this.pendingFiles = [];
+        this.selectedOrientation = null;
+
+        this.initializeElements();
+        this.attachEventListeners();
+        this.setupPlayfield();
+    }
+
+    initializeElements() {
+        // Toolbar elements
+        this.addMediaBtn = document.getElementById('addMediaBtn');
+        this.fileInput = document.getElementById('fileInput');
+        this.bgColorBtn = document.getElementById('bgColorBtn');
+        this.bgColorPicker = document.getElementById('bgColorPicker');
+        this.bgImageBtn = document.getElementById('bgImageBtn');
+        this.bgImageInput = document.getElementById('bgImageInput');
+        this.clearBgBtn = document.getElementById('clearBgBtn');
+        this.saveBtn = document.getElementById('saveBtn');
+        this.loadBtn = document.getElementById('loadBtn');
+        this.loadInput = document.getElementById('loadInput');
+
+        // Layout buttons
+        this.layoutCircleBtn = document.getElementById('layoutCircleBtn');
+        this.layoutCurveBtn = document.getElementById('layoutCurveBtn');
+        this.layoutGridBtn = document.getElementById('layoutGridBtn');
+        this.layoutLineBtn = document.getElementById('layoutLineBtn');
+
+        // Playfield
+        this.playfield = document.getElementById('playfield');
+
+        // Modals
+        this.orientationModal = document.getElementById('orientationModal');
+        this.landscapeBtn = document.getElementById('landscapeBtn');
+        this.portraitBtn = document.getElementById('portraitBtn');
+        this.cancelOrientationBtn = document.getElementById('cancelOrientationBtn');
+
+        // Maximized view
+        this.maximizedView = document.getElementById('maximizedView');
+        this.closeMaximizedBtn = document.getElementById('closeMaximizedBtn');
+        this.maximizedMediaContainer = document.getElementById('maximizedMediaContainer');
+    }
+
+    attachEventListeners() {
+        // Media upload
+        this.addMediaBtn.addEventListener('click', () => this.fileInput.click());
+        this.fileInput.addEventListener('change', (e) => this.handleFileSelection(e));
+
+        // Background controls
+        this.bgColorBtn.addEventListener('click', () => this.bgColorPicker.click());
+        this.bgColorPicker.addEventListener('input', (e) => this.setBackgroundColor(e.target.value));
+        this.bgImageBtn.addEventListener('click', () => this.bgImageInput.click());
+        this.bgImageInput.addEventListener('change', (e) => this.setBackgroundImage(e));
+        this.clearBgBtn.addEventListener('click', () => this.clearBackground());
+
+        // Save/Load
+        this.saveBtn.addEventListener('click', () => this.savePresentation());
+        this.loadBtn.addEventListener('click', () => this.loadInput.click());
+        this.loadInput.addEventListener('change', (e) => this.loadPresentation(e));
+
+        // Layout buttons
+        this.layoutCircleBtn.addEventListener('click', () => this.arrangeInCircle());
+        this.layoutCurveBtn.addEventListener('click', () => this.arrangeInCurve());
+        this.layoutGridBtn.addEventListener('click', () => this.arrangeInGrid());
+        this.layoutLineBtn.addEventListener('click', () => this.arrangeInLine());
+
+        // Orientation modal
+        this.landscapeBtn.addEventListener('click', () => this.selectOrientation('landscape'));
+        this.portraitBtn.addEventListener('click', () => this.selectOrientation('portrait'));
+        this.cancelOrientationBtn.addEventListener('click', () => this.closeOrientationModal());
+
+        // Maximized view
+        this.closeMaximizedBtn.addEventListener('click', () => this.closeMaximizedView());
+        this.maximizedView.addEventListener('click', (e) => {
+            if (e.target === this.maximizedView) {
+                this.closeMaximizedView();
+            }
+        });
+    }
+
+    setupPlayfield() {
+        // Pan functionality
+        let isPanning = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        this.playfield.addEventListener('mousedown', (e) => {
+            if (e.target === this.playfield) {
+                isPanning = true;
+                startX = e.pageX - this.playfield.offsetLeft;
+                startY = e.pageY - this.playfield.offsetTop;
+                scrollLeft = this.playfield.scrollLeft;
+                scrollTop = this.playfield.scrollTop;
+            }
+        });
+
+        this.playfield.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - this.playfield.offsetLeft;
+            const y = e.pageY - this.playfield.offsetTop;
+            const walkX = (x - startX) * 1;
+            const walkY = (y - startY) * 1;
+            this.playfield.scrollLeft = scrollLeft - walkX;
+            this.playfield.scrollTop = scrollTop - walkY;
+        });
+
+        this.playfield.addEventListener('mouseup', () => isPanning = false);
+        this.playfield.addEventListener('mouseleave', () => isPanning = false);
+    }
+
+    handleFileSelection(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        this.pendingFiles = files;
+        this.showOrientationModal();
+    }
+
+    showOrientationModal() {
+        this.orientationModal.classList.remove('hidden');
+    }
+
+    closeOrientationModal() {
+        this.orientationModal.classList.add('hidden');
+        this.pendingFiles = [];
+        this.fileInput.value = '';
+    }
+
+    selectOrientation(orientation) {
+        this.selectedOrientation = orientation;
+        this.pendingFiles.forEach(file => this.createCard(file, orientation));
+        this.closeOrientationModal();
+    }
+
+    createCard(file, orientation) {
+        const card = document.createElement('div');
+        card.className = `card ${orientation}`;
+        card.dataset.cardId = this.currentCardId++;
+
+        const isVideo = file.type.startsWith('video/');
+
+        // Random position
+        const x = Math.random() * (this.playfield.offsetWidth - 300) + 50;
+        const y = Math.random() * (this.playfield.offsetHeight - 300) + 50;
+        card.style.left = `${x}px`;
+        card.style.top = `${y}px`;
+
+        // Card content
+        const cardContent = document.createElement('div');
+        cardContent.className = 'card-content';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (isVideo) {
+                const video = document.createElement('video');
+                video.src = e.target.result;
+                video.muted = true;
+                video.setAttribute('playsinline', '');
+
+                // Try to get first frame
+                video.addEventListener('loadeddata', () => {
+                    video.currentTime = 0.1;
+                });
+
+                cardContent.appendChild(video);
+
+                // Add play overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'video-overlay';
+                overlay.innerHTML = '▶';
+                cardContent.appendChild(overlay);
+
+                // Store video data
+                card.dataset.mediaType = 'video';
+                card.dataset.mediaSrc = e.target.result;
+            } else {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                cardContent.appendChild(img);
+
+                card.dataset.mediaType = 'image';
+                card.dataset.mediaSrc = e.target.result;
+            }
+        };
+        reader.readAsDataURL(file);
+
+        card.appendChild(cardContent);
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'card-delete';
+        deleteBtn.innerHTML = '✕';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteCard(card);
+        });
+        card.appendChild(deleteBtn);
+
+        // Resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        card.appendChild(resizeHandle);
+
+        // Add interactions
+        this.makeDraggable(card);
+        this.makeResizable(card, resizeHandle);
+        this.makeClickable(card);
+
+        this.playfield.appendChild(card);
+        this.cards.push(card);
+    }
+
+    makeDraggable(card) {
+        let isDragging = false;
+        let currentX, currentY, initialX, initialY;
+
+        const dragStart = (e) => {
+            if (e.target.classList.contains('resize-handle') ||
+                e.target.classList.contains('card-delete')) {
+                return;
+            }
+
+            isDragging = true;
+            initialX = e.clientX - card.offsetLeft;
+            initialY = e.clientY - card.offsetTop;
+
+            card.style.cursor = 'grabbing';
+        };
+
+        const drag = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+
+            card.style.left = `${currentX}px`;
+            card.style.top = `${currentY}px`;
+        };
+
+        const dragEnd = () => {
+            isDragging = false;
+            card.style.cursor = 'move';
+        };
+
+        card.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+    }
+
+    makeResizable(card, handle) {
+        let isResizing = false;
+        let startWidth, startHeight, startX, startY;
+
+        const resizeStart = (e) => {
+            e.stopPropagation();
+            isResizing = true;
+            startWidth = card.offsetWidth;
+            startHeight = card.offsetHeight;
+            startX = e.clientX;
+            startY = e.clientY;
+        };
+
+        const resize = (e) => {
+            if (!isResizing) return;
+            e.preventDefault();
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            const newWidth = startWidth + deltaX;
+            const newHeight = startHeight + deltaY;
+
+            if (newWidth > 100) {
+                card.style.width = `${newWidth}px`;
+            }
+            if (newHeight > 100) {
+                card.style.height = `${newHeight}px`;
+            }
+        };
+
+        const resizeEnd = () => {
+            isResizing = false;
+        };
+
+        handle.addEventListener('mousedown', resizeStart);
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', resizeEnd);
+    }
+
+    makeClickable(card) {
+        let clickTime = 0;
+
+        card.addEventListener('mousedown', () => {
+            clickTime = Date.now();
+        });
+
+        card.addEventListener('mouseup', (e) => {
+            const clickDuration = Date.now() - clickTime;
+
+            // Only trigger if it was a quick click (not a drag)
+            if (clickDuration < 200 &&
+                !e.target.classList.contains('resize-handle') &&
+                !e.target.classList.contains('card-delete')) {
+                this.maximizeCard(card);
+            }
+        });
+    }
+
+    maximizeCard(card) {
+        const mediaSrc = card.dataset.mediaSrc;
+        const mediaType = card.dataset.mediaType;
+
+        this.maximizedMediaContainer.innerHTML = '';
+
+        if (mediaType === 'video') {
+            const video = document.createElement('video');
+            video.src = mediaSrc;
+            video.controls = true;
+            video.style.maxWidth = '90vw';
+            video.style.maxHeight = '90vh';
+            this.maximizedMediaContainer.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = mediaSrc;
+            this.maximizedMediaContainer.appendChild(img);
+        }
+
+        this.maximizedView.classList.remove('hidden');
+        this.setupZoom();
+    }
+
+    setupZoom() {
+        let scale = 1;
+
+        const handleWheel = (e) => {
+            e.preventDefault();
+
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            scale = Math.max(0.5, Math.min(3, scale + delta));
+
+            this.maximizedMediaContainer.style.transform = `scale(${scale})`;
+        };
+
+        this.maximizedView.addEventListener('wheel', handleWheel, { passive: false });
+
+        // Clean up on close
+        this.maximizedView._wheelHandler = handleWheel;
+    }
+
+    closeMaximizedView() {
+        this.maximizedView.classList.add('hidden');
+
+        // Stop video if playing
+        const video = this.maximizedMediaContainer.querySelector('video');
+        if (video) {
+            video.pause();
+        }
+
+        // Reset zoom
+        this.maximizedMediaContainer.style.transform = 'scale(1)';
+
+        // Remove wheel listener
+        if (this.maximizedView._wheelHandler) {
+            this.maximizedView.removeEventListener('wheel', this.maximizedView._wheelHandler);
+        }
+    }
+
+    deleteCard(card) {
+        card.remove();
+        this.cards = this.cards.filter(c => c !== card);
+    }
+
+    setBackgroundColor(color) {
+        this.playfield.style.background = color;
+        this.playfield.style.backgroundImage = 'none';
+    }
+
+    setBackgroundImage(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.playfield.style.backgroundImage = `url(${e.target.result})`;
+            this.playfield.style.backgroundSize = 'cover';
+            this.playfield.style.backgroundPosition = 'center';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    clearBackground() {
+        this.playfield.style.background = '#2c3e50';
+        this.playfield.style.backgroundImage = 'none';
+    }
+
+    // Layout Arrangements
+    arrangeInCircle() {
+        if (this.cards.length === 0) return;
+
+        const centerX = this.playfield.offsetWidth / 2;
+        const centerY = this.playfield.offsetHeight / 2;
+        const radius = Math.min(centerX, centerY) * 0.6;
+        const angleStep = (2 * Math.PI) / this.cards.length;
+
+        this.cards.forEach((card, index) => {
+            const angle = index * angleStep - Math.PI / 2;
+            const x = centerX + radius * Math.cos(angle) - card.offsetWidth / 2;
+            const y = centerY + radius * Math.sin(angle) - card.offsetHeight / 2;
+
+            card.style.left = `${x}px`;
+            card.style.top = `${y}px`;
+        });
+    }
+
+    arrangeInCurve() {
+        if (this.cards.length === 0) return;
+
+        const width = this.playfield.offsetWidth;
+        const height = this.playfield.offsetHeight;
+        const padding = 100;
+
+        this.cards.forEach((card, index) => {
+            const t = index / (this.cards.length - 1 || 1);
+
+            // Bezier curve
+            const x = padding + (width - 2 * padding) * t;
+            const y = height / 2 + Math.sin(t * Math.PI) * (height / 3) - card.offsetHeight / 2;
+
+            card.style.left = `${x}px`;
+            card.style.top = `${y}px`;
+        });
+    }
+
+    arrangeInGrid() {
+        if (this.cards.length === 0) return;
+
+        const cols = Math.ceil(Math.sqrt(this.cards.length));
+        const rows = Math.ceil(this.cards.length / cols);
+        const spacing = 50;
+        const cardWidth = 300;
+        const cardHeight = 200;
+
+        const totalWidth = cols * (cardWidth + spacing);
+        const totalHeight = rows * (cardHeight + spacing);
+        const startX = (this.playfield.offsetWidth - totalWidth) / 2;
+        const startY = (this.playfield.offsetHeight - totalHeight) / 2;
+
+        this.cards.forEach((card, index) => {
+            const col = index % cols;
+            const row = Math.floor(index / cols);
+
+            const x = startX + col * (cardWidth + spacing);
+            const y = startY + row * (cardHeight + spacing);
+
+            card.style.left = `${x}px`;
+            card.style.top = `${y}px`;
+        });
+    }
+
+    arrangeInLine() {
+        if (this.cards.length === 0) return;
+
+        const width = this.playfield.offsetWidth;
+        const height = this.playfield.offsetHeight;
+        const padding = 100;
+        const spacing = (width - 2 * padding) / (this.cards.length - 1 || 1);
+
+        this.cards.forEach((card, index) => {
+            const x = padding + index * spacing;
+            const y = height / 2 - card.offsetHeight / 2;
+
+            card.style.left = `${x}px`;
+            card.style.top = `${y}px`;
+        });
+    }
+
+    // Save/Load Functionality
+    savePresentation() {
+        const data = {
+            background: {
+                color: this.playfield.style.background,
+                image: this.playfield.style.backgroundImage
+            },
+            cards: this.cards.map(card => ({
+                id: card.dataset.cardId,
+                orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                position: {
+                    left: card.style.left,
+                    top: card.style.top
+                },
+                size: {
+                    width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                    height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                },
+                mediaType: card.dataset.mediaType,
+                mediaSrc: card.dataset.mediaSrc
+            }))
+        };
+
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `presentation-${Date.now()}.json`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    loadPresentation(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+
+                // Clear current cards
+                this.cards.forEach(card => card.remove());
+                this.cards = [];
+
+                // Set background
+                if (data.background.image && data.background.image !== 'none') {
+                    this.playfield.style.backgroundImage = data.background.image;
+                    this.playfield.style.backgroundSize = 'cover';
+                    this.playfield.style.backgroundPosition = 'center';
+                } else if (data.background.color) {
+                    this.playfield.style.background = data.background.color;
+                }
+
+                // Load cards
+                data.cards.forEach(cardData => {
+                    this.loadCard(cardData);
+                });
+
+                alert('Presentation loaded successfully!');
+            } catch (error) {
+                alert('Error loading presentation: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input
+        this.loadInput.value = '';
+    }
+
+    loadCard(cardData) {
+        const card = document.createElement('div');
+        card.className = `card ${cardData.orientation}`;
+        card.dataset.cardId = cardData.id;
+        card.dataset.mediaType = cardData.mediaType;
+        card.dataset.mediaSrc = cardData.mediaSrc;
+
+        card.style.left = cardData.position.left;
+        card.style.top = cardData.position.top;
+        card.style.width = cardData.size.width;
+        card.style.height = cardData.size.height;
+
+        // Card content
+        const cardContent = document.createElement('div');
+        cardContent.className = 'card-content';
+
+        if (cardData.mediaType === 'video') {
+            const video = document.createElement('video');
+            video.src = cardData.mediaSrc;
+            video.muted = true;
+            video.setAttribute('playsinline', '');
+
+            video.addEventListener('loadeddata', () => {
+                video.currentTime = 0.1;
+            });
+
+            cardContent.appendChild(video);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'video-overlay';
+            overlay.innerHTML = '▶';
+            cardContent.appendChild(overlay);
+        } else {
+            const img = document.createElement('img');
+            img.src = cardData.mediaSrc;
+            cardContent.appendChild(img);
+        }
+
+        card.appendChild(cardContent);
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'card-delete';
+        deleteBtn.innerHTML = '✕';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteCard(card);
+        });
+        card.appendChild(deleteBtn);
+
+        // Resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        card.appendChild(resizeHandle);
+
+        // Add interactions
+        this.makeDraggable(card);
+        this.makeResizable(card, resizeHandle);
+        this.makeClickable(card);
+
+        this.playfield.appendChild(card);
+        this.cards.push(card);
+    }
+}
+
+// Initialize the app
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new FlexPresent();
+});
