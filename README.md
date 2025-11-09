@@ -1,4 +1,4 @@
-# FlexPresent - Flexible Presentation App
+# Showcase - Flexible Presentation App
 
 A modern, flexible presentation web application that breaks free from traditional slide-based presentations. Create dynamic, interactive presentations with images and videos that you can arrange freely in a customizable playfield.
 

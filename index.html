@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlexPresent - Flexible Presentation App</title>
+    <title>Showcase - Flexible Presentation App</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- Top Toolbar -->
         <header class="toolbar">
             <div class="toolbar-left">
-                <h1>FlexPresent</h1>
+                <h1>Showcase</h1>
             </div>
             <div class="toolbar-center">
                 <button id="addMediaBtn" class="btn btn-primary">
@@ -49,18 +49,34 @@
                     <span>🗑️</span>
                 </button>
 
-                <button id="saveBtn" class="btn btn-success" title="Save Presentation">
+                <button id="saveBtn" class="btn btn-success" title="Save Presentation (Embedded Media)">
                     <span>💾</span> Save
+                </button>
+                <button id="exportFolderBtn" class="btn btn-success" title="Export with External Media (Hybrid)">
+                    <span>📦</span> Export
                 </button>
                 <button id="loadBtn" class="btn btn-success" title="Load Presentation">
                     <span>📂</span> Load
                 </button>
-                <input type="file" id="loadInput" accept=".json" style="display: none;">
+                <input type="file" id="loadInput" accept=".json,.zip" style="display: none;">
             </div>
         </header>
 
         <!-- Main Playfield -->
         <div class="playfield-container">
+            <!-- Vertical Toolbar -->
+            <div class="vertical-toolbar">
+                <button id="zoomInBtn" class="toolbar-icon-btn" title="Zoom In">
+                    <span>+</span>
+                </button>
+                <button id="zoomOutBtn" class="toolbar-icon-btn" title="Zoom Out">
+                    <span>−</span>
+                </button>
+                <button id="refocusBtn" class="toolbar-icon-btn" title="Refocus">
+                    <span>⊙</span>
+                </button>
+            </div>
+
             <div id="playfield" class="playfield">
                 <!-- Cards will be added here dynamically -->
             </div>
@@ -96,6 +112,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

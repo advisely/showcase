@@ -112,12 +112,58 @@ body {
     background: #2c3e50;
     background-size: cover;
     background-position: center;
-    overflow: auto;
+    overflow: hidden;
     cursor: grab;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
 }
 
 .playfield:active {
     cursor: grabbing;
+}
+
+/* Vertical Toolbar Styles */
+.vertical-toolbar {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(30, 30, 30, 0.9);
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+}
+
+.toolbar-icon-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    background: #3a3a3a;
+    color: #e0e0e0;
+    font-size: 24px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.toolbar-icon-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.toolbar-icon-btn:active {
+    transform: scale(0.95);
 }
 
 /* Card Styles */

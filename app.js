@@ -1,14 +1,32 @@
-// FlexPresent - Flexible Presentation App
-class FlexPresent {
+// Showcase - Flexible Presentation App
+class Showcase {
     constructor() {
         this.cards = [];
         this.currentCardId = 0;
         this.pendingFiles = [];
         this.selectedOrientation = null;
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.videoFiles = new Map(); // Store video File objects for external export
 
+        this.cleanupOldData();
         this.initializeElements();
         this.attachEventListeners();
         this.setupPlayfield();
+        this.loadFromLocalStorage();
+    }
+
+    cleanupOldData() {
+        // Remove old FlexPresent data
+        try {
+            if (localStorage.getItem('flexPresent_presentation')) {
+                console.log('Cleaning up old FlexPresent data...');
+                localStorage.removeItem('flexPresent_presentation');
+            }
+        } catch (error) {
+            console.error('Error during cleanup:', error);
+        }
     }
 
     initializeElements() {
@@ -21,6 +39,7 @@ class FlexPresent {
         this.bgImageInput = document.getElementById('bgImageInput');
         this.clearBgBtn = document.getElementById('clearBgBtn');
         this.saveBtn = document.getElementById('saveBtn');
+        this.exportFolderBtn = document.getElementById('exportFolderBtn');
         this.loadBtn = document.getElementById('loadBtn');
         this.loadInput = document.getElementById('loadInput');
 
@@ -29,6 +48,11 @@ class FlexPresent {
         this.layoutCurveBtn = document.getElementById('layoutCurveBtn');
         this.layoutGridBtn = document.getElementById('layoutGridBtn');
         this.layoutLineBtn = document.getElementById('layoutLineBtn');
+
+        // Zoom controls
+        this.zoomInBtn = document.getElementById('zoomInBtn');
+        this.zoomOutBtn = document.getElementById('zoomOutBtn');
+        this.refocusBtn = document.getElementById('refocusBtn');
 
         // Playfield
         this.playfield = document.getElementById('playfield');
@@ -59,6 +83,7 @@ class FlexPresent {
 
         // Save/Load
         this.saveBtn.addEventListener('click', () => this.savePresentation());
+        this.exportFolderBtn.addEventListener('click', () => this.exportWithExternalMedia());
         this.loadBtn.addEventListener('click', () => this.loadInput.click());
         this.loadInput.addEventListener('change', (e) => this.loadPresentation(e));
 
@@ -67,6 +92,11 @@ class FlexPresent {
         this.layoutCurveBtn.addEventListener('click', () => this.arrangeInCurve());
         this.layoutGridBtn.addEventListener('click', () => this.arrangeInGrid());
         this.layoutLineBtn.addEventListener('click', () => this.arrangeInLine());
+
+        // Zoom controls
+        this.zoomInBtn.addEventListener('click', () => this.zoomIn());
+        this.zoomOutBtn.addEventListener('click', () => this.zoomOut());
+        this.refocusBtn.addEventListener('click', () => this.refocus());
 
         // Orientation modal
         this.landscapeBtn.addEventListener('click', () => this.selectOrientation('landscape'));
@@ -85,54 +115,99 @@ class FlexPresent {
     setupPlayfield() {
         // Pan functionality
         let isPanning = false;
-        let startX, startY, scrollLeft, scrollTop;
+        let startX, startY, startPanX, startPanY;
 
         this.playfield.addEventListener('mousedown', (e) => {
             if (e.target === this.playfield) {
                 isPanning = true;
-                startX = e.pageX - this.playfield.offsetLeft;
-                startY = e.pageY - this.playfield.offsetTop;
-                scrollLeft = this.playfield.scrollLeft;
-                scrollTop = this.playfield.scrollTop;
+                startX = e.clientX;
+                startY = e.clientY;
+                startPanX = this.panX;
+                startPanY = this.panY;
+                this.playfield.style.cursor = 'grabbing';
             }
         });
 
         this.playfield.addEventListener('mousemove', (e) => {
             if (!isPanning) return;
             e.preventDefault();
-            const x = e.pageX - this.playfield.offsetLeft;
-            const y = e.pageY - this.playfield.offsetTop;
-            const walkX = (x - startX) * 1;
-            const walkY = (y - startY) * 1;
-            this.playfield.scrollLeft = scrollLeft - walkX;
-            this.playfield.scrollTop = scrollTop - walkY;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            this.panX = startPanX + deltaX;
+            this.panY = startPanY + deltaY;
+            this.applyTransform();
         });
 
-        this.playfield.addEventListener('mouseup', () => isPanning = false);
-        this.playfield.addEventListener('mouseleave', () => isPanning = false);
+        this.playfield.addEventListener('mouseup', () => {
+            isPanning = false;
+            this.playfield.style.cursor = 'grab';
+        });
+        this.playfield.addEventListener('mouseleave', () => {
+            isPanning = false;
+            this.playfield.style.cursor = 'grab';
+        });
+    }
+
+    zoomIn() {
+        this.zoomLevel = Math.min(3, this.zoomLevel + 0.2);
+        this.applyTransform();
+    }
+
+    zoomOut() {
+        this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.2);
+        this.applyTransform();
+    }
+
+    applyTransform() {
+        this.playfield.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
+    }
+
+    refocus() {
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.applyTransform();
     }
 
     handleFileSelection(e) {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
+        // Store files and show modal
         this.pendingFiles = files;
         this.showOrientationModal();
     }
 
     showOrientationModal() {
+        // Force reflow to ensure proper modal display
         this.orientationModal.classList.remove('hidden');
+        this.orientationModal.offsetHeight; // Trigger reflow
     }
 
     closeOrientationModal() {
+        // Ensure modal is hidden and state is reset
         this.orientationModal.classList.add('hidden');
         this.pendingFiles = [];
+
+        // Reset file input properly
         this.fileInput.value = '';
+
+        // Force reflow to ensure changes are applied
+        this.orientationModal.offsetHeight;
     }
 
     selectOrientation(orientation) {
+        if (this.pendingFiles.length === 0) {
+            this.closeOrientationModal();
+            return;
+        }
+
         this.selectedOrientation = orientation;
+
+        // Create cards from pending files
         this.pendingFiles.forEach(file => this.createCard(file, orientation));
+
+        // Close modal after creating cards
         this.closeOrientationModal();
     }
 
@@ -143,9 +218,11 @@ class FlexPresent {
 
         const isVideo = file.type.startsWith('video/');
 
-        // Random position
-        const x = Math.random() * (this.playfield.offsetWidth - 300) + 50;
-        const y = Math.random() * (this.playfield.offsetHeight - 300) + 50;
+        // Center position
+        const cardWidth = orientation === 'landscape' ? 300 : 200;
+        const cardHeight = orientation === 'landscape' ? 200 : 300;
+        const x = (this.playfield.offsetWidth / 2) - (cardWidth / 2);
+        const y = (this.playfield.offsetHeight / 2) - (cardHeight / 2);
         card.style.left = `${x}px`;
         card.style.top = `${y}px`;
 
@@ -177,6 +254,10 @@ class FlexPresent {
                 // Store video data
                 card.dataset.mediaType = 'video';
                 card.dataset.mediaSrc = e.target.result;
+                card.dataset.videoFilename = file.name;
+
+                // Store original video File for external export
+                this.videoFiles.set(card.dataset.cardId, file);
             } else {
                 const img = document.createElement('img');
                 img.src = e.target.result;
@@ -212,23 +293,28 @@ class FlexPresent {
 
         this.playfield.appendChild(card);
         this.cards.push(card);
+        this.saveToLocalStorage();
     }
 
     makeDraggable(card) {
         let isDragging = false;
+        let hasMoved = false;
         let currentX, currentY, initialX, initialY;
 
         const dragStart = (e) => {
+            // Ignore if clicking on special elements
             if (e.target.classList.contains('resize-handle') ||
                 e.target.classList.contains('card-delete')) {
                 return;
             }
 
             isDragging = true;
+            hasMoved = false;
             initialX = e.clientX - card.offsetLeft;
             initialY = e.clientY - card.offsetTop;
 
             card.style.cursor = 'grabbing';
+            e.preventDefault(); // Prevent text selection
         };
 
         const drag = (e) => {
@@ -238,18 +324,36 @@ class FlexPresent {
             currentX = e.clientX - initialX;
             currentY = e.clientY - initialY;
 
+            // Mark that we've actually moved
+            hasMoved = true;
+
             card.style.left = `${currentX}px`;
             card.style.top = `${currentY}px`;
         };
 
         const dragEnd = () => {
+            if (!isDragging) return;
+
             isDragging = false;
             card.style.cursor = 'move';
+
+            // Only save if we actually moved
+            if (hasMoved) {
+                this.saveToLocalStorage();
+            }
+
+            hasMoved = false;
         };
 
         card.addEventListener('mousedown', dragStart);
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
+
+        // Store cleanup function for later
+        card._cleanupDrag = () => {
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', dragEnd);
+        };
     }
 
     makeResizable(card, handle) {
@@ -258,6 +362,7 @@ class FlexPresent {
 
         const resizeStart = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             isResizing = true;
             startWidth = card.offsetWidth;
             startHeight = card.offsetHeight;
@@ -284,31 +389,53 @@ class FlexPresent {
         };
 
         const resizeEnd = () => {
+            if (!isResizing) return;
             isResizing = false;
+            this.saveToLocalStorage();
         };
 
         handle.addEventListener('mousedown', resizeStart);
         document.addEventListener('mousemove', resize);
         document.addEventListener('mouseup', resizeEnd);
+
+        // Store cleanup function
+        card._cleanupResize = () => {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', resizeEnd);
+        };
     }
 
     makeClickable(card) {
-        let clickTime = 0;
+        let mouseDownPos = { x: 0, y: 0 };
+        let mouseDownTime = 0;
 
-        card.addEventListener('mousedown', () => {
-            clickTime = Date.now();
-        });
+        const handleMouseDown = (e) => {
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+            mouseDownTime = Date.now();
+        };
 
-        card.addEventListener('mouseup', (e) => {
-            const clickDuration = Date.now() - clickTime;
+        const handleClick = (e) => {
+            // Ignore if clicking on special elements
+            if (e.target.classList.contains('resize-handle') ||
+                e.target.classList.contains('card-delete')) {
+                return;
+            }
 
-            // Only trigger if it was a quick click (not a drag)
-            if (clickDuration < 200 &&
-                !e.target.classList.contains('resize-handle') &&
-                !e.target.classList.contains('card-delete')) {
+            const mouseUpPos = { x: e.clientX, y: e.clientY };
+            const timeDiff = Date.now() - mouseDownTime;
+            const distance = Math.sqrt(
+                Math.pow(mouseUpPos.x - mouseDownPos.x, 2) +
+                Math.pow(mouseUpPos.y - mouseDownPos.y, 2)
+            );
+
+            // Only maximize if it was a quick click with minimal movement (< 5px)
+            if (timeDiff < 300 && distance < 5) {
                 this.maximizeCard(card);
             }
-        });
+        };
+
+        card.addEventListener('mousedown', handleMouseDown);
+        card.addEventListener('mouseup', handleClick);
     }
 
     maximizeCard(card) {
@@ -371,13 +498,27 @@ class FlexPresent {
     }
 
     deleteCard(card) {
+        // Clean up event listeners to prevent memory leaks
+        if (card._cleanupDrag) {
+            card._cleanupDrag();
+        }
+        if (card._cleanupResize) {
+            card._cleanupResize();
+        }
+
+        // Remove from videoFiles map
+        this.videoFiles.delete(card.dataset.cardId);
+
+        // Remove from DOM and array
         card.remove();
         this.cards = this.cards.filter(c => c !== card);
+        this.saveToLocalStorage();
     }
 
     setBackgroundColor(color) {
         this.playfield.style.background = color;
         this.playfield.style.backgroundImage = 'none';
+        this.saveToLocalStorage();
     }
 
     setBackgroundImage(e) {
@@ -389,6 +530,7 @@ class FlexPresent {
             this.playfield.style.backgroundImage = `url(${e.target.result})`;
             this.playfield.style.backgroundSize = 'cover';
             this.playfield.style.backgroundPosition = 'center';
+            this.saveToLocalStorage();
         };
         reader.readAsDataURL(file);
     }
@@ -396,6 +538,7 @@ class FlexPresent {
     clearBackground() {
         this.playfield.style.background = '#2c3e50';
         this.playfield.style.backgroundImage = 'none';
+        this.saveToLocalStorage();
     }
 
     // Layout Arrangements
@@ -415,6 +558,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInCurve() {
@@ -434,6 +578,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInGrid() {
@@ -460,6 +605,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInLine() {
@@ -477,6 +623,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     // Save/Load Functionality
@@ -514,50 +661,194 @@ class FlexPresent {
         URL.revokeObjectURL(url);
     }
 
-    loadPresentation(e) {
+    async exportWithExternalMedia() {
+        const zip = new JSZip();
+        const timestamp = Date.now();
+
+        // Create presentation data with hybrid storage
+        const data = {
+            background: {
+                color: this.playfield.style.background,
+                image: this.playfield.style.backgroundImage
+            },
+            cards: this.cards.map(card => {
+                const cardData = {
+                    id: card.dataset.cardId,
+                    orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                    position: {
+                        left: card.style.left,
+                        top: card.style.top
+                    },
+                    size: {
+                        width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                        height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                    },
+                    mediaType: card.dataset.mediaType
+                };
+
+                // Hybrid approach: embed images, link videos
+                if (card.dataset.mediaType === 'image') {
+                    cardData.mediaSrc = card.dataset.mediaSrc; // Embed images
+                    cardData.embedded = true;
+                } else if (card.dataset.mediaType === 'video') {
+                    cardData.mediaPath = `media/${card.dataset.videoFilename}`; // Link videos
+                    cardData.embedded = false;
+                }
+
+                return cardData;
+            })
+        };
+
+        // Add JSON config to ZIP
+        zip.file('presentation.json', JSON.stringify(data, null, 2));
+
+        // Add video files to media folder in ZIP
+        const mediaFolder = zip.folder('media');
+        for (const [cardId, videoFile] of this.videoFiles.entries()) {
+            const filename = this.cards.find(c => c.dataset.cardId === cardId)?.dataset.videoFilename;
+            if (filename && videoFile) {
+                mediaFolder.file(filename, videoFile);
+            }
+        }
+
+        // Add README for user guidance
+        const readme = `# Showcase Presentation Package
+
+This folder contains your presentation with external media files.
+
+## Structure:
+- presentation.json: Configuration file with positions and embedded images
+- media/: Folder containing video files
+
+## To use on another computer:
+1. Keep this entire folder together
+2. Open Showcase
+3. Click "Load" and select presentation.json
+4. Make sure the media/ folder is in the same directory
+
+## Storage Strategy (Hybrid):
+- Images: Embedded in JSON (portable, usually small)
+- Videos: Stored in media/ folder (keeps JSON file size manageable)
+
+Generated: ${new Date(timestamp).toLocaleString()}
+`;
+        zip.file('README.txt', readme);
+
+        // Generate and download ZIP
+        try {
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `presentation-${timestamp}.zip`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            alert('✅ Presentation exported with external media!\n\nExtract the ZIP file and keep the folder structure intact.');
+        } catch (error) {
+            alert('❌ Export failed: ' + error.message);
+            console.error('Export error:', error);
+        }
+    }
+
+    async loadPresentation(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-
-                // Clear current cards
-                this.cards.forEach(card => card.remove());
-                this.cards = [];
-
-                // Set background
-                if (data.background.image && data.background.image !== 'none') {
-                    this.playfield.style.backgroundImage = data.background.image;
-                    this.playfield.style.backgroundSize = 'cover';
-                    this.playfield.style.backgroundPosition = 'center';
-                } else if (data.background.color) {
-                    this.playfield.style.background = data.background.color;
-                }
-
-                // Load cards
-                data.cards.forEach(cardData => {
-                    this.loadCard(cardData);
-                });
-
-                alert('Presentation loaded successfully!');
-            } catch (error) {
-                alert('Error loading presentation: ' + error.message);
+        try {
+            if (file.name.endsWith('.zip')) {
+                await this.loadFromZip(file);
+            } else {
+                await this.loadFromJSON(file);
             }
-        };
-        reader.readAsText(file);
+        } catch (error) {
+            alert('❌ Error loading presentation: ' + error.message);
+            console.error('Load error:', error);
+        }
 
         // Reset input
         this.loadInput.value = '';
     }
 
-    loadCard(cardData) {
+    async loadFromZip(zipFile) {
+        const zip = await JSZip.loadAsync(zipFile);
+
+        // Read presentation.json
+        const jsonFile = zip.file('presentation.json');
+        if (!jsonFile) {
+            throw new Error('presentation.json not found in ZIP');
+        }
+
+        const jsonText = await jsonFile.async('text');
+        const data = JSON.parse(jsonText);
+
+        // Create a map of video files from media folder
+        const videoBlobs = new Map();
+        const mediaFolder = zip.folder('media');
+        if (mediaFolder) {
+            const mediaFiles = [];
+            mediaFolder.forEach((relativePath, file) => {
+                mediaFiles.push({ name: relativePath, file });
+            });
+
+            for (const { name, file } of mediaFiles) {
+                const blob = await file.async('blob');
+                const url = URL.createObjectURL(blob);
+                videoBlobs.set(`media/${name}`, url);
+            }
+        }
+
+        // Load the presentation
+        this.loadPresentationData(data, videoBlobs);
+        alert('✅ Presentation loaded from ZIP successfully!');
+    }
+
+    async loadFromJSON(jsonFile) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    this.loadPresentationData(data);
+                    alert('✅ Presentation loaded successfully!');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsText(jsonFile);
+        });
+    }
+
+    loadPresentationData(data, videoBlobs = new Map()) {
+        // Clear current cards
+        this.cards.forEach(card => card.remove());
+        this.cards = [];
+        this.videoFiles.clear();
+
+        // Set background
+        if (data.background.image && data.background.image !== 'none') {
+            this.playfield.style.backgroundImage = data.background.image;
+            this.playfield.style.backgroundSize = 'cover';
+            this.playfield.style.backgroundPosition = 'center';
+        } else if (data.background.color) {
+            this.playfield.style.background = data.background.color;
+        }
+
+        // Load cards
+        data.cards.forEach(cardData => {
+            this.loadCard(cardData, videoBlobs);
+        });
+    }
+
+    loadCard(cardData, videoBlobs = new Map()) {
         const card = document.createElement('div');
         card.className = `card ${cardData.orientation}`;
         card.dataset.cardId = cardData.id;
         card.dataset.mediaType = cardData.mediaType;
-        card.dataset.mediaSrc = cardData.mediaSrc;
 
         card.style.left = cardData.position.left;
         card.style.top = cardData.position.top;
@@ -569,8 +860,24 @@ class FlexPresent {
         cardContent.className = 'card-content';
 
         if (cardData.mediaType === 'video') {
+            // Hybrid: Check if video is embedded or external
+            let videoSrc;
+            if (cardData.embedded === false && cardData.mediaPath) {
+                // External video from ZIP
+                videoSrc = videoBlobs.get(cardData.mediaPath);
+                if (!videoSrc) {
+                    console.error(`Video not found: ${cardData.mediaPath}`);
+                    videoSrc = ''; // Fallback
+                }
+            } else {
+                // Embedded video (base64)
+                videoSrc = cardData.mediaSrc;
+            }
+
+            card.dataset.mediaSrc = videoSrc;
+
             const video = document.createElement('video');
-            video.src = cardData.mediaSrc;
+            video.src = videoSrc;
             video.muted = true;
             video.setAttribute('playsinline', '');
 
@@ -585,6 +892,8 @@ class FlexPresent {
             overlay.innerHTML = '▶';
             cardContent.appendChild(overlay);
         } else {
+            // Images are always embedded
+            card.dataset.mediaSrc = cardData.mediaSrc;
             const img = document.createElement('img');
             img.src = cardData.mediaSrc;
             cardContent.appendChild(img);
@@ -615,9 +924,83 @@ class FlexPresent {
         this.playfield.appendChild(card);
         this.cards.push(card);
     }
+
+    saveToLocalStorage() {
+        try {
+            // Clean up old key if it exists
+            if (localStorage.getItem('flexPresent_presentation')) {
+                localStorage.removeItem('flexPresent_presentation');
+            }
+
+            const data = {
+                background: {
+                    color: this.playfield.style.background,
+                    image: this.playfield.style.backgroundImage
+                },
+                cards: this.cards.map(card => ({
+                    id: card.dataset.cardId,
+                    orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                    position: {
+                        left: card.style.left,
+                        top: card.style.top
+                    },
+                    size: {
+                        width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                        height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                    },
+                    mediaType: card.dataset.mediaType,
+                    // Don't save large video data to localStorage
+                    mediaSrc: card.dataset.mediaType === 'video' ? null : card.dataset.mediaSrc
+                }))
+            };
+
+            localStorage.setItem('showcase_presentation', JSON.stringify(data));
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded. Positions will not be saved automatically.');
+                console.warn('Use the Export button to save your presentation with media.');
+                // Clear localStorage to free up space
+                localStorage.removeItem('showcase_presentation');
+            } else {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+    }
+
+    loadFromLocalStorage() {
+        const savedData = localStorage.getItem('showcase_presentation');
+        if (!savedData) return;
+
+        try {
+            const data = JSON.parse(savedData);
+
+            // Set background
+            if (data.background.image && data.background.image !== 'none') {
+                this.playfield.style.backgroundImage = data.background.image;
+                this.playfield.style.backgroundSize = 'cover';
+                this.playfield.style.backgroundPosition = 'center';
+            } else if (data.background.color) {
+                this.playfield.style.background = data.background.color;
+            }
+
+            // Load cards (only those with valid mediaSrc)
+            data.cards.forEach(cardData => {
+                // Skip videos without media (can't restore them)
+                if (cardData.mediaType === 'video' && !cardData.mediaSrc) {
+                    console.warn('Skipping video card without media data. Use Export/Load to preserve videos.');
+                    return;
+                }
+                this.loadCard(cardData);
+            });
+        } catch (error) {
+            console.error('Error loading from localStorage:', error);
+            // Clear corrupted data
+            localStorage.removeItem('showcase_presentation');
+        }
+    }
 }
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new FlexPresent();
+    window.app = new Showcase();
 });
