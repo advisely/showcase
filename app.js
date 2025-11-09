@@ -8,6 +8,7 @@ class FlexPresent {
         this.zoomLevel = 1;
         this.panX = 0;
         this.panY = 0;
+        this.videoFiles = new Map(); // Store video File objects for external export
 
         this.initializeElements();
         this.attachEventListeners();
@@ -25,6 +26,7 @@ class FlexPresent {
         this.bgImageInput = document.getElementById('bgImageInput');
         this.clearBgBtn = document.getElementById('clearBgBtn');
         this.saveBtn = document.getElementById('saveBtn');
+        this.exportFolderBtn = document.getElementById('exportFolderBtn');
         this.loadBtn = document.getElementById('loadBtn');
         this.loadInput = document.getElementById('loadInput');
 
@@ -68,6 +70,7 @@ class FlexPresent {
 
         // Save/Load
         this.saveBtn.addEventListener('click', () => this.savePresentation());
+        this.exportFolderBtn.addEventListener('click', () => this.exportWithExternalMedia());
         this.loadBtn.addEventListener('click', () => this.loadInput.click());
         this.loadInput.addEventListener('change', (e) => this.loadPresentation(e));
 
@@ -220,6 +223,10 @@ class FlexPresent {
                 // Store video data
                 card.dataset.mediaType = 'video';
                 card.dataset.mediaSrc = e.target.result;
+                card.dataset.videoFilename = file.name;
+
+                // Store original video File for external export
+                this.videoFiles.set(card.dataset.cardId, file);
             } else {
                 const img = document.createElement('img');
                 img.src = e.target.result;
@@ -568,50 +575,194 @@ class FlexPresent {
         URL.revokeObjectURL(url);
     }
 
-    loadPresentation(e) {
+    async exportWithExternalMedia() {
+        const zip = new JSZip();
+        const timestamp = Date.now();
+
+        // Create presentation data with hybrid storage
+        const data = {
+            background: {
+                color: this.playfield.style.background,
+                image: this.playfield.style.backgroundImage
+            },
+            cards: this.cards.map(card => {
+                const cardData = {
+                    id: card.dataset.cardId,
+                    orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                    position: {
+                        left: card.style.left,
+                        top: card.style.top
+                    },
+                    size: {
+                        width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                        height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                    },
+                    mediaType: card.dataset.mediaType
+                };
+
+                // Hybrid approach: embed images, link videos
+                if (card.dataset.mediaType === 'image') {
+                    cardData.mediaSrc = card.dataset.mediaSrc; // Embed images
+                    cardData.embedded = true;
+                } else if (card.dataset.mediaType === 'video') {
+                    cardData.mediaPath = `media/${card.dataset.videoFilename}`; // Link videos
+                    cardData.embedded = false;
+                }
+
+                return cardData;
+            })
+        };
+
+        // Add JSON config to ZIP
+        zip.file('presentation.json', JSON.stringify(data, null, 2));
+
+        // Add video files to media folder in ZIP
+        const mediaFolder = zip.folder('media');
+        for (const [cardId, videoFile] of this.videoFiles.entries()) {
+            const filename = this.cards.find(c => c.dataset.cardId === cardId)?.dataset.videoFilename;
+            if (filename && videoFile) {
+                mediaFolder.file(filename, videoFile);
+            }
+        }
+
+        // Add README for user guidance
+        const readme = `# FlexPresent Presentation Package
+
+This folder contains your presentation with external media files.
+
+## Structure:
+- presentation.json: Configuration file with positions and embedded images
+- media/: Folder containing video files
+
+## To use on another computer:
+1. Keep this entire folder together
+2. Open FlexPresent
+3. Click "Load" and select presentation.json
+4. Make sure the media/ folder is in the same directory
+
+## Storage Strategy (Hybrid):
+- Images: Embedded in JSON (portable, usually small)
+- Videos: Stored in media/ folder (keeps JSON file size manageable)
+
+Generated: ${new Date(timestamp).toLocaleString()}
+`;
+        zip.file('README.txt', readme);
+
+        // Generate and download ZIP
+        try {
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `presentation-${timestamp}.zip`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+
+            alert('✅ Presentation exported with external media!\n\nExtract the ZIP file and keep the folder structure intact.');
+        } catch (error) {
+            alert('❌ Export failed: ' + error.message);
+            console.error('Export error:', error);
+        }
+    }
+
+    async loadPresentation(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-
-                // Clear current cards
-                this.cards.forEach(card => card.remove());
-                this.cards = [];
-
-                // Set background
-                if (data.background.image && data.background.image !== 'none') {
-                    this.playfield.style.backgroundImage = data.background.image;
-                    this.playfield.style.backgroundSize = 'cover';
-                    this.playfield.style.backgroundPosition = 'center';
-                } else if (data.background.color) {
-                    this.playfield.style.background = data.background.color;
-                }
-
-                // Load cards
-                data.cards.forEach(cardData => {
-                    this.loadCard(cardData);
-                });
-
-                alert('Presentation loaded successfully!');
-            } catch (error) {
-                alert('Error loading presentation: ' + error.message);
+        try {
+            if (file.name.endsWith('.zip')) {
+                await this.loadFromZip(file);
+            } else {
+                await this.loadFromJSON(file);
             }
-        };
-        reader.readAsText(file);
+        } catch (error) {
+            alert('❌ Error loading presentation: ' + error.message);
+            console.error('Load error:', error);
+        }
 
         // Reset input
         this.loadInput.value = '';
     }
 
-    loadCard(cardData) {
+    async loadFromZip(zipFile) {
+        const zip = await JSZip.loadAsync(zipFile);
+
+        // Read presentation.json
+        const jsonFile = zip.file('presentation.json');
+        if (!jsonFile) {
+            throw new Error('presentation.json not found in ZIP');
+        }
+
+        const jsonText = await jsonFile.async('text');
+        const data = JSON.parse(jsonText);
+
+        // Create a map of video files from media folder
+        const videoBlobs = new Map();
+        const mediaFolder = zip.folder('media');
+        if (mediaFolder) {
+            const mediaFiles = [];
+            mediaFolder.forEach((relativePath, file) => {
+                mediaFiles.push({ name: relativePath, file });
+            });
+
+            for (const { name, file } of mediaFiles) {
+                const blob = await file.async('blob');
+                const url = URL.createObjectURL(blob);
+                videoBlobs.set(`media/${name}`, url);
+            }
+        }
+
+        // Load the presentation
+        this.loadPresentationData(data, videoBlobs);
+        alert('✅ Presentation loaded from ZIP successfully!');
+    }
+
+    async loadFromJSON(jsonFile) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    this.loadPresentationData(data);
+                    alert('✅ Presentation loaded successfully!');
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsText(jsonFile);
+        });
+    }
+
+    loadPresentationData(data, videoBlobs = new Map()) {
+        // Clear current cards
+        this.cards.forEach(card => card.remove());
+        this.cards = [];
+        this.videoFiles.clear();
+
+        // Set background
+        if (data.background.image && data.background.image !== 'none') {
+            this.playfield.style.backgroundImage = data.background.image;
+            this.playfield.style.backgroundSize = 'cover';
+            this.playfield.style.backgroundPosition = 'center';
+        } else if (data.background.color) {
+            this.playfield.style.background = data.background.color;
+        }
+
+        // Load cards
+        data.cards.forEach(cardData => {
+            this.loadCard(cardData, videoBlobs);
+        });
+    }
+
+    loadCard(cardData, videoBlobs = new Map()) {
         const card = document.createElement('div');
         card.className = `card ${cardData.orientation}`;
         card.dataset.cardId = cardData.id;
         card.dataset.mediaType = cardData.mediaType;
-        card.dataset.mediaSrc = cardData.mediaSrc;
 
         card.style.left = cardData.position.left;
         card.style.top = cardData.position.top;
@@ -623,8 +774,24 @@ class FlexPresent {
         cardContent.className = 'card-content';
 
         if (cardData.mediaType === 'video') {
+            // Hybrid: Check if video is embedded or external
+            let videoSrc;
+            if (cardData.embedded === false && cardData.mediaPath) {
+                // External video from ZIP
+                videoSrc = videoBlobs.get(cardData.mediaPath);
+                if (!videoSrc) {
+                    console.error(`Video not found: ${cardData.mediaPath}`);
+                    videoSrc = ''; // Fallback
+                }
+            } else {
+                // Embedded video (base64)
+                videoSrc = cardData.mediaSrc;
+            }
+
+            card.dataset.mediaSrc = videoSrc;
+
             const video = document.createElement('video');
-            video.src = cardData.mediaSrc;
+            video.src = videoSrc;
             video.muted = true;
             video.setAttribute('playsinline', '');
 
@@ -639,6 +806,8 @@ class FlexPresent {
             overlay.innerHTML = '▶';
             cardContent.appendChild(overlay);
         } else {
+            // Images are always embedded
+            card.dataset.mediaSrc = cardData.mediaSrc;
             const img = document.createElement('img');
             img.src = cardData.mediaSrc;
             cardContent.appendChild(img);
