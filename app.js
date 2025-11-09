@@ -5,10 +5,14 @@ class FlexPresent {
         this.currentCardId = 0;
         this.pendingFiles = [];
         this.selectedOrientation = null;
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
 
         this.initializeElements();
         this.attachEventListeners();
         this.setupPlayfield();
+        this.loadFromLocalStorage();
     }
 
     initializeElements() {
@@ -29,6 +33,11 @@ class FlexPresent {
         this.layoutCurveBtn = document.getElementById('layoutCurveBtn');
         this.layoutGridBtn = document.getElementById('layoutGridBtn');
         this.layoutLineBtn = document.getElementById('layoutLineBtn');
+
+        // Zoom controls
+        this.zoomInBtn = document.getElementById('zoomInBtn');
+        this.zoomOutBtn = document.getElementById('zoomOutBtn');
+        this.refocusBtn = document.getElementById('refocusBtn');
 
         // Playfield
         this.playfield = document.getElementById('playfield');
@@ -68,6 +77,11 @@ class FlexPresent {
         this.layoutGridBtn.addEventListener('click', () => this.arrangeInGrid());
         this.layoutLineBtn.addEventListener('click', () => this.arrangeInLine());
 
+        // Zoom controls
+        this.zoomInBtn.addEventListener('click', () => this.zoomIn());
+        this.zoomOutBtn.addEventListener('click', () => this.zoomOut());
+        this.refocusBtn.addEventListener('click', () => this.refocus());
+
         // Orientation modal
         this.landscapeBtn.addEventListener('click', () => this.selectOrientation('landscape'));
         this.portraitBtn.addEventListener('click', () => this.selectOrientation('portrait'));
@@ -85,31 +99,58 @@ class FlexPresent {
     setupPlayfield() {
         // Pan functionality
         let isPanning = false;
-        let startX, startY, scrollLeft, scrollTop;
+        let startX, startY, startPanX, startPanY;
 
         this.playfield.addEventListener('mousedown', (e) => {
             if (e.target === this.playfield) {
                 isPanning = true;
-                startX = e.pageX - this.playfield.offsetLeft;
-                startY = e.pageY - this.playfield.offsetTop;
-                scrollLeft = this.playfield.scrollLeft;
-                scrollTop = this.playfield.scrollTop;
+                startX = e.clientX;
+                startY = e.clientY;
+                startPanX = this.panX;
+                startPanY = this.panY;
+                this.playfield.style.cursor = 'grabbing';
             }
         });
 
         this.playfield.addEventListener('mousemove', (e) => {
             if (!isPanning) return;
             e.preventDefault();
-            const x = e.pageX - this.playfield.offsetLeft;
-            const y = e.pageY - this.playfield.offsetTop;
-            const walkX = (x - startX) * 1;
-            const walkY = (y - startY) * 1;
-            this.playfield.scrollLeft = scrollLeft - walkX;
-            this.playfield.scrollTop = scrollTop - walkY;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            this.panX = startPanX + deltaX;
+            this.panY = startPanY + deltaY;
+            this.applyTransform();
         });
 
-        this.playfield.addEventListener('mouseup', () => isPanning = false);
-        this.playfield.addEventListener('mouseleave', () => isPanning = false);
+        this.playfield.addEventListener('mouseup', () => {
+            isPanning = false;
+            this.playfield.style.cursor = 'grab';
+        });
+        this.playfield.addEventListener('mouseleave', () => {
+            isPanning = false;
+            this.playfield.style.cursor = 'grab';
+        });
+    }
+
+    zoomIn() {
+        this.zoomLevel = Math.min(3, this.zoomLevel + 0.2);
+        this.applyTransform();
+    }
+
+    zoomOut() {
+        this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.2);
+        this.applyTransform();
+    }
+
+    applyTransform() {
+        this.playfield.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
+    }
+
+    refocus() {
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.applyTransform();
     }
 
     handleFileSelection(e) {
@@ -143,9 +184,11 @@ class FlexPresent {
 
         const isVideo = file.type.startsWith('video/');
 
-        // Random position
-        const x = Math.random() * (this.playfield.offsetWidth - 300) + 50;
-        const y = Math.random() * (this.playfield.offsetHeight - 300) + 50;
+        // Center position
+        const cardWidth = orientation === 'landscape' ? 300 : 200;
+        const cardHeight = orientation === 'landscape' ? 200 : 300;
+        const x = (this.playfield.offsetWidth / 2) - (cardWidth / 2);
+        const y = (this.playfield.offsetHeight / 2) - (cardHeight / 2);
         card.style.left = `${x}px`;
         card.style.top = `${y}px`;
 
@@ -212,6 +255,7 @@ class FlexPresent {
 
         this.playfield.appendChild(card);
         this.cards.push(card);
+        this.saveToLocalStorage();
     }
 
     makeDraggable(card) {
@@ -245,6 +289,7 @@ class FlexPresent {
         const dragEnd = () => {
             isDragging = false;
             card.style.cursor = 'move';
+            this.saveToLocalStorage();
         };
 
         card.addEventListener('mousedown', dragStart);
@@ -285,6 +330,7 @@ class FlexPresent {
 
         const resizeEnd = () => {
             isResizing = false;
+            this.saveToLocalStorage();
         };
 
         handle.addEventListener('mousedown', resizeStart);
@@ -373,11 +419,13 @@ class FlexPresent {
     deleteCard(card) {
         card.remove();
         this.cards = this.cards.filter(c => c !== card);
+        this.saveToLocalStorage();
     }
 
     setBackgroundColor(color) {
         this.playfield.style.background = color;
         this.playfield.style.backgroundImage = 'none';
+        this.saveToLocalStorage();
     }
 
     setBackgroundImage(e) {
@@ -389,6 +437,7 @@ class FlexPresent {
             this.playfield.style.backgroundImage = `url(${e.target.result})`;
             this.playfield.style.backgroundSize = 'cover';
             this.playfield.style.backgroundPosition = 'center';
+            this.saveToLocalStorage();
         };
         reader.readAsDataURL(file);
     }
@@ -396,6 +445,7 @@ class FlexPresent {
     clearBackground() {
         this.playfield.style.background = '#2c3e50';
         this.playfield.style.backgroundImage = 'none';
+        this.saveToLocalStorage();
     }
 
     // Layout Arrangements
@@ -415,6 +465,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInCurve() {
@@ -434,6 +485,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInGrid() {
@@ -460,6 +512,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     arrangeInLine() {
@@ -477,6 +530,7 @@ class FlexPresent {
             card.style.left = `${x}px`;
             card.style.top = `${y}px`;
         });
+        this.saveToLocalStorage();
     }
 
     // Save/Load Functionality
@@ -614,6 +668,55 @@ class FlexPresent {
 
         this.playfield.appendChild(card);
         this.cards.push(card);
+    }
+
+    saveToLocalStorage() {
+        const data = {
+            background: {
+                color: this.playfield.style.background,
+                image: this.playfield.style.backgroundImage
+            },
+            cards: this.cards.map(card => ({
+                id: card.dataset.cardId,
+                orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                position: {
+                    left: card.style.left,
+                    top: card.style.top
+                },
+                size: {
+                    width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                    height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                },
+                mediaType: card.dataset.mediaType,
+                mediaSrc: card.dataset.mediaSrc
+            }))
+        };
+        localStorage.setItem('flexPresent_presentation', JSON.stringify(data));
+    }
+
+    loadFromLocalStorage() {
+        const savedData = localStorage.getItem('flexPresent_presentation');
+        if (!savedData) return;
+
+        try {
+            const data = JSON.parse(savedData);
+
+            // Set background
+            if (data.background.image && data.background.image !== 'none') {
+                this.playfield.style.backgroundImage = data.background.image;
+                this.playfield.style.backgroundSize = 'cover';
+                this.playfield.style.backgroundPosition = 'center';
+            } else if (data.background.color) {
+                this.playfield.style.background = data.background.color;
+            }
+
+            // Load cards
+            data.cards.forEach(cardData => {
+                this.loadCard(cardData);
+            });
+        } catch (error) {
+            console.error('Error loading from localStorage:', error);
+        }
     }
 }
 
