@@ -10,10 +10,23 @@ class Showcase {
         this.panY = 0;
         this.videoFiles = new Map(); // Store video File objects for external export
 
+        this.cleanupOldData();
         this.initializeElements();
         this.attachEventListeners();
         this.setupPlayfield();
         this.loadFromLocalStorage();
+    }
+
+    cleanupOldData() {
+        // Remove old FlexPresent data
+        try {
+            if (localStorage.getItem('flexPresent_presentation')) {
+                console.log('Cleaning up old FlexPresent data...');
+                localStorage.removeItem('flexPresent_presentation');
+            }
+        } catch (error) {
+            console.error('Error during cleanup:', error);
+        }
     }
 
     initializeElements() {
@@ -285,19 +298,23 @@ class Showcase {
 
     makeDraggable(card) {
         let isDragging = false;
+        let hasMoved = false;
         let currentX, currentY, initialX, initialY;
 
         const dragStart = (e) => {
+            // Ignore if clicking on special elements
             if (e.target.classList.contains('resize-handle') ||
                 e.target.classList.contains('card-delete')) {
                 return;
             }
 
             isDragging = true;
+            hasMoved = false;
             initialX = e.clientX - card.offsetLeft;
             initialY = e.clientY - card.offsetTop;
 
             card.style.cursor = 'grabbing';
+            e.preventDefault(); // Prevent text selection
         };
 
         const drag = (e) => {
@@ -307,19 +324,36 @@ class Showcase {
             currentX = e.clientX - initialX;
             currentY = e.clientY - initialY;
 
+            // Mark that we've actually moved
+            hasMoved = true;
+
             card.style.left = `${currentX}px`;
             card.style.top = `${currentY}px`;
         };
 
         const dragEnd = () => {
+            if (!isDragging) return;
+
             isDragging = false;
             card.style.cursor = 'move';
-            this.saveToLocalStorage();
+
+            // Only save if we actually moved
+            if (hasMoved) {
+                this.saveToLocalStorage();
+            }
+
+            hasMoved = false;
         };
 
         card.addEventListener('mousedown', dragStart);
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
+
+        // Store cleanup function for later
+        card._cleanupDrag = () => {
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', dragEnd);
+        };
     }
 
     makeResizable(card, handle) {
@@ -328,6 +362,7 @@ class Showcase {
 
         const resizeStart = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             isResizing = true;
             startWidth = card.offsetWidth;
             startHeight = card.offsetHeight;
@@ -354,6 +389,7 @@ class Showcase {
         };
 
         const resizeEnd = () => {
+            if (!isResizing) return;
             isResizing = false;
             this.saveToLocalStorage();
         };
@@ -361,25 +397,45 @@ class Showcase {
         handle.addEventListener('mousedown', resizeStart);
         document.addEventListener('mousemove', resize);
         document.addEventListener('mouseup', resizeEnd);
+
+        // Store cleanup function
+        card._cleanupResize = () => {
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('mouseup', resizeEnd);
+        };
     }
 
     makeClickable(card) {
-        let clickTime = 0;
+        let mouseDownPos = { x: 0, y: 0 };
+        let mouseDownTime = 0;
 
-        card.addEventListener('mousedown', () => {
-            clickTime = Date.now();
-        });
+        const handleMouseDown = (e) => {
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+            mouseDownTime = Date.now();
+        };
 
-        card.addEventListener('mouseup', (e) => {
-            const clickDuration = Date.now() - clickTime;
+        const handleClick = (e) => {
+            // Ignore if clicking on special elements
+            if (e.target.classList.contains('resize-handle') ||
+                e.target.classList.contains('card-delete')) {
+                return;
+            }
 
-            // Only trigger if it was a quick click (not a drag)
-            if (clickDuration < 200 &&
-                !e.target.classList.contains('resize-handle') &&
-                !e.target.classList.contains('card-delete')) {
+            const mouseUpPos = { x: e.clientX, y: e.clientY };
+            const timeDiff = Date.now() - mouseDownTime;
+            const distance = Math.sqrt(
+                Math.pow(mouseUpPos.x - mouseDownPos.x, 2) +
+                Math.pow(mouseUpPos.y - mouseDownPos.y, 2)
+            );
+
+            // Only maximize if it was a quick click with minimal movement (< 5px)
+            if (timeDiff < 300 && distance < 5) {
                 this.maximizeCard(card);
             }
-        });
+        };
+
+        card.addEventListener('mousedown', handleMouseDown);
+        card.addEventListener('mouseup', handleClick);
     }
 
     maximizeCard(card) {
@@ -442,6 +498,18 @@ class Showcase {
     }
 
     deleteCard(card) {
+        // Clean up event listeners to prevent memory leaks
+        if (card._cleanupDrag) {
+            card._cleanupDrag();
+        }
+        if (card._cleanupResize) {
+            card._cleanupResize();
+        }
+
+        // Remove from videoFiles map
+        this.videoFiles.delete(card.dataset.cardId);
+
+        // Remove from DOM and array
         card.remove();
         this.cards = this.cards.filter(c => c !== card);
         this.saveToLocalStorage();
@@ -858,27 +926,45 @@ Generated: ${new Date(timestamp).toLocaleString()}
     }
 
     saveToLocalStorage() {
-        const data = {
-            background: {
-                color: this.playfield.style.background,
-                image: this.playfield.style.backgroundImage
-            },
-            cards: this.cards.map(card => ({
-                id: card.dataset.cardId,
-                orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
-                position: {
-                    left: card.style.left,
-                    top: card.style.top
+        try {
+            // Clean up old key if it exists
+            if (localStorage.getItem('flexPresent_presentation')) {
+                localStorage.removeItem('flexPresent_presentation');
+            }
+
+            const data = {
+                background: {
+                    color: this.playfield.style.background,
+                    image: this.playfield.style.backgroundImage
                 },
-                size: {
-                    width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
-                    height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
-                },
-                mediaType: card.dataset.mediaType,
-                mediaSrc: card.dataset.mediaSrc
-            }))
-        };
-        localStorage.setItem('showcase_presentation', JSON.stringify(data));
+                cards: this.cards.map(card => ({
+                    id: card.dataset.cardId,
+                    orientation: card.classList.contains('landscape') ? 'landscape' : 'portrait',
+                    position: {
+                        left: card.style.left,
+                        top: card.style.top
+                    },
+                    size: {
+                        width: card.style.width || (card.classList.contains('landscape') ? '300px' : '200px'),
+                        height: card.style.height || (card.classList.contains('landscape') ? '200px' : '300px')
+                    },
+                    mediaType: card.dataset.mediaType,
+                    // Don't save large video data to localStorage
+                    mediaSrc: card.dataset.mediaType === 'video' ? null : card.dataset.mediaSrc
+                }))
+            };
+
+            localStorage.setItem('showcase_presentation', JSON.stringify(data));
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded. Positions will not be saved automatically.');
+                console.warn('Use the Export button to save your presentation with media.');
+                // Clear localStorage to free up space
+                localStorage.removeItem('showcase_presentation');
+            } else {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
     }
 
     loadFromLocalStorage() {
@@ -897,12 +983,19 @@ Generated: ${new Date(timestamp).toLocaleString()}
                 this.playfield.style.background = data.background.color;
             }
 
-            // Load cards
+            // Load cards (only those with valid mediaSrc)
             data.cards.forEach(cardData => {
+                // Skip videos without media (can't restore them)
+                if (cardData.mediaType === 'video' && !cardData.mediaSrc) {
+                    console.warn('Skipping video card without media data. Use Export/Load to preserve videos.');
+                    return;
+                }
                 this.loadCard(cardData);
             });
         } catch (error) {
             console.error('Error loading from localStorage:', error);
+            // Clear corrupted data
+            localStorage.removeItem('showcase_presentation');
         }
     }
 }
