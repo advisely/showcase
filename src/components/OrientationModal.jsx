@@ -22,18 +22,24 @@ const OrientationModal = () => {
       const reader = new FileReader();
 
       reader.onload = (e) => {
+        // Center position on screen
+        const cardWidth = orientation === 'landscape' ? 300 : 200;
+        const cardHeight = orientation === 'landscape' ? 200 : 300;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight - 100; // Account for toolbar
+
         const cardData = {
           orientation,
           mediaType: isVideo ? 'video' : 'image',
           mediaSrc: e.target.result,
           videoFilename: isVideo ? file.name : null,
           position: {
-            x: Math.random() * 800 + 200, // Random position
-            y: Math.random() * 400 + 100
+            x: (viewportWidth / 2) - (cardWidth / 2),
+            y: (viewportHeight / 2) - (cardHeight / 2)
           },
           size: {
-            width: orientation === 'landscape' ? 300 : 200,
-            height: orientation === 'landscape' ? 200 : 300
+            width: cardWidth,
+            height: cardHeight
           }
         };
 

@@ -3,8 +3,10 @@ import useStore from '../store/useStore';
 
 const VerticalToolbar = () => {
   const zoomLevel = useStore(state => state.zoomLevel);
+  const interactionMode = useStore(state => state.interactionMode);
   const setZoom = useStore(state => state.setZoom);
   const resetView = useStore(state => state.resetView);
+  const toggleInteractionMode = useStore(state => state.toggleInteractionMode);
   const saveToStorage = useStore(state => state.saveToStorage);
 
   const handleZoomIn = () => {
@@ -22,6 +24,11 @@ const VerticalToolbar = () => {
     saveToStorage();
   };
 
+  const handleToggleMode = () => {
+    toggleInteractionMode();
+    saveToStorage();
+  };
+
   return (
     <motion.div
       className="vertical-toolbar"
@@ -29,6 +36,20 @@ const VerticalToolbar = () => {
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3, delay: 0.2 }}
     >
+      <motion.button
+        className="toolbar-icon-btn"
+        onClick={handleToggleMode}
+        title={interactionMode === 'cursor' ? 'Switch to Hand Mode' : 'Switch to Cursor Mode'}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        style={{
+          background: interactionMode === 'hand' ? '#667eea' : '#3a3a3a',
+          color: interactionMode === 'hand' ? 'white' : '#e0e0e0'
+        }}
+      >
+        <span style={{ fontSize: '20px' }}>{interactionMode === 'cursor' ? '👆' : '✋'}</span>
+      </motion.button>
+
       <motion.button
         className="toolbar-icon-btn"
         onClick={handleZoomIn}

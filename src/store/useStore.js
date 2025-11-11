@@ -14,6 +14,8 @@ const useStore = create((set, get) => ({
   zoomLevel: 1,
   panX: 0,
   panY: 0,
+  interactionMode: 'cursor', // 'cursor' or 'hand'
+  activeLayout: null, // 'circle', 'line', 'curve', 'grid', or null
   selectedOrientation: null,
   pendingFiles: [],
   isModalOpen: false,
@@ -23,18 +25,21 @@ const useStore = create((set, get) => ({
   storageError: null,
 
   // Actions
-  addCard: (cardData) => set((state) => {
+  addCard: (cardData) => {
+    const state = get();
     const newCard = {
       id: `card-${state.currentCardId}`,
       ...cardData,
       timestamp: Date.now()
     };
 
-    return {
+    set({
       cards: [...state.cards, newCard],
       currentCardId: state.currentCardId + 1
-    };
-  }),
+    });
+
+    return newCard;
+  },
 
   updateCard: (cardId, updates) => set((state) => ({
     cards: state.cards.map(card =>
@@ -62,6 +67,14 @@ const useStore = create((set, get) => ({
   setPan: (panX, panY) => set({ panX, panY }),
 
   resetView: () => set({ zoomLevel: 1, panX: 0, panY: 0 }),
+
+  setInteractionMode: (mode) => set({ interactionMode: mode }),
+
+  toggleInteractionMode: () => set((state) => ({
+    interactionMode: state.interactionMode === 'cursor' ? 'hand' : 'cursor'
+  })),
+
+  setActiveLayout: (layout) => set({ activeLayout: layout }),
 
   setSelectedOrientation: (orientation) => set({ selectedOrientation: orientation }),
 
@@ -97,7 +110,7 @@ const useStore = create((set, get) => ({
       };
     });
 
-    return { cards: updatedCards };
+    return { cards: updatedCards, activeLayout: 'circle' };
   }),
 
   arrangeInCurve: () => set((state) => {
@@ -118,7 +131,7 @@ const useStore = create((set, get) => ({
       };
     });
 
-    return { cards: updatedCards };
+    return { cards: updatedCards, activeLayout: 'curve' };
   }),
 
   arrangeInGrid: () => set((state) => {
@@ -147,7 +160,7 @@ const useStore = create((set, get) => ({
       };
     });
 
-    return { cards: updatedCards };
+    return { cards: updatedCards, activeLayout: 'grid' };
   }),
 
   arrangeInLine: () => set((state) => {
@@ -168,7 +181,7 @@ const useStore = create((set, get) => ({
       };
     });
 
-    return { cards: updatedCards };
+    return { cards: updatedCards, activeLayout: 'line' };
   }),
 
   // Save/Load functionality
@@ -221,7 +234,6 @@ const useStore = create((set, get) => ({
           currentCardId: (data.cards?.length || 0)
         });
 
-        console.log('✅ Presentation loaded');
         return true;
       }
     } catch (error) {

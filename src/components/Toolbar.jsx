@@ -74,7 +74,10 @@ const Toolbar = () => {
       transition={{ duration: 0.3 }}
     >
       <div className="toolbar-left">
-        <h1>Showcase</h1>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <h1 style={{ margin: 0, lineHeight: '1' }}>Showcase</h1>
+          <span style={{ fontSize: '11px', color: '#888', fontWeight: '400' }}>by Yassine Boumiza</span>
+        </div>
         {storageError && (
           <span className="storage-error" title={storageError}>
             ⚠️ Storage Issue

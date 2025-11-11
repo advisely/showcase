@@ -35,7 +35,6 @@ export const savePresentation = async (id = 'current', data) => {
     };
 
     await db.put(STORE_NAME, presentation);
-    console.log('✅ Presentation saved to IndexedDB');
     return true;
   } catch (error) {
     console.error('Failed to save presentation:', error);
@@ -57,7 +56,6 @@ export const loadPresentation = async (id = 'current') => {
     const presentation = await db.get(STORE_NAME, id);
 
     if (presentation) {
-      console.log('✅ Presentation loaded from IndexedDB');
       return presentation.data;
     }
 

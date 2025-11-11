@@ -18,21 +18,29 @@ const Card = ({ card }) => {
   const deleteCard = useStore(state => state.deleteCard);
   const setMaximizedCard = useStore(state => state.setMaximizedCard);
   const saveToStorage = useStore(state => state.saveToStorage);
+  const zoomLevel = useStore(state => state.zoomLevel);
+  const interactionMode = useStore(state => state.interactionMode);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
-    data: card
+    data: card,
+    disabled: interactionMode === 'hand' // Disable dragging in hand mode
   });
 
+  // Calculate real-time position during drag, compensating for playfield zoom
+  const x = (card.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
+  const y = (card.position?.y || 0) + ((transform?.y || 0) / zoomLevel);
+
   const style = {
-    transform: CSS.Translate.toString(transform),
     position: 'absolute',
-    left: card.position?.x || 0,
-    top: card.position?.y || 0,
-    width: size.width,
-    height: size.height,
-    cursor: isDragging ? 'grabbing' : 'move',
-    zIndex: isDragging ? 1000 : 1
+    left: x + 'px',
+    top: y + 'px',
+    width: size.width + 'px',
+    height: size.height + 'px',
+    cursor: interactionMode === 'hand' ? 'grab' : (isDragging ? 'grabbing' : 'move'),
+    zIndex: isDragging ? 1000 : 1,
+    transition: isDragging ? 'none' : 'left 0.2s, top 0.2s',
+    pointerEvents: interactionMode === 'hand' ? 'none' : 'auto'
   };
 
   // Handle resize
