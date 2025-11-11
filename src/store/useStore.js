@@ -9,7 +9,12 @@ const useStore = create((set, get) => ({
   videoFiles: new Map(),
   background: {
     color: '#2c3e50',
-    image: null
+    image: null,
+    mode: 'color', // 'color', 'gradient', 'image'
+    gradientColor: '#34495e',
+    gradientAngle: 135,
+    opacity: 0.3, // Overlay opacity for images
+    blur: 0 // Blur amount in pixels (0-20)
   },
   zoomLevel: 1,
   panX: 0,
@@ -242,6 +247,8 @@ const useStore = create((set, get) => ({
         zoomLevel: state.zoomLevel,
         panX: state.panX,
         panY: state.panY,
+        activeLayout: state.activeLayout,
+        layoutSettings: state.layoutSettings,
         timestamp: Date.now()
       };
 
@@ -272,6 +279,8 @@ const useStore = create((set, get) => ({
           zoomLevel: data.zoomLevel || 1,
           panX: data.panX || 0,
           panY: data.panY || 0,
+          activeLayout: data.activeLayout || null,
+          layoutSettings: data.layoutSettings || { strokeWidth: 4, color: 'rgba(0, 255, 255, 0.8)' },
           currentCardId: (data.cards?.length || 0)
         });
 

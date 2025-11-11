@@ -6,6 +6,7 @@ import OrientationModal from './components/OrientationModal';
 import MaximizedView from './components/MaximizedView';
 import Minimap from './components/Minimap';
 import LayoutCustomizationMenu from './components/LayoutCustomizationMenu';
+import BackgroundMenu from './components/BackgroundMenu';
 import useStore from './store/useStore';
 import { migrateFromLocalStorage } from './utils/storage';
 import './App.css';
@@ -29,7 +30,7 @@ function App() {
     <div className="app-container">
       <Toolbar />
 
-      <div className="playfield-container">
+      <div style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
         <VerticalToolbar />
         <Playfield />
       </div>
@@ -38,6 +39,7 @@ function App() {
       <MaximizedView />
       <Minimap />
       <LayoutCustomizationMenu />
+      <BackgroundMenu />
     </div>
   );
 }

@@ -119,7 +119,8 @@ const Card = ({ card }) => {
               src={card.mediaSrc}
               muted
               playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              draggable="false"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', WebkitUserDrag: 'none' }}
             />
             <div className="video-overlay">▶</div>
           </>
@@ -127,7 +128,8 @@ const Card = ({ card }) => {
           <img
             src={card.mediaSrc}
             alt="Card media"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            draggable="false"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', WebkitUserDrag: 'none' }}
           />
         )}
       </div>

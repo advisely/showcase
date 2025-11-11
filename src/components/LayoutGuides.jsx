@@ -68,7 +68,7 @@ const LayoutGuides = () => {
           width: '2000px',
           height: '1000px',
           pointerEvents: 'auto',
-          zIndex: 0,
+          zIndex: 1,
           overflow: 'visible',
           cursor: 'pointer'
         }}
@@ -116,7 +116,7 @@ const LayoutGuides = () => {
           width: '2000px',
           height: '1000px',
           pointerEvents: 'auto',
-          zIndex: 0,
+          zIndex: 1,
           overflow: 'visible',
           cursor: 'pointer'
         }}
@@ -135,6 +135,43 @@ const LayoutGuides = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         />
+        {/* Start marker - circle */}
+        <motion.circle
+          cx={startX}
+          cy={y}
+          r={8}
+          fill={guideColor}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        />
+        {/* End marker - X */}
+        <motion.g
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <line
+            x1={endX - 10}
+            y1={y - 10}
+            x2={endX + 10}
+            y2={y + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          <line
+            x1={endX + 10}
+            y1={y - 10}
+            x2={endX - 10}
+            y2={y + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        </motion.g>
       </svg>
     );
   };
@@ -155,6 +192,12 @@ const LayoutGuides = () => {
 
     const pathD = `M ${points.join(' L ')}`;
 
+    // Start and end points
+    const startX = padding;
+    const startY = height / 2;
+    const endX = padding + (width - 2 * padding);
+    const endY = height / 2;
+
     return (
       <svg
         style={{
@@ -164,7 +207,7 @@ const LayoutGuides = () => {
           width: '2000px',
           height: '1000px',
           pointerEvents: 'auto',
-          zIndex: 0,
+          zIndex: 1,
           overflow: 'visible',
           cursor: 'pointer'
         }}
@@ -182,6 +225,43 @@ const LayoutGuides = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         />
+        {/* Start marker - circle */}
+        <motion.circle
+          cx={startX}
+          cy={startY}
+          r={8}
+          fill={guideColor}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        />
+        {/* End marker - X */}
+        <motion.g
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <line
+            x1={endX - 10}
+            y1={endY - 10}
+            x2={endX + 10}
+            y2={endY + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          <line
+            x1={endX + 10}
+            y1={endY - 10}
+            x2={endX - 10}
+            y2={endY + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        </motion.g>
       </svg>
     );
   };
@@ -219,7 +299,7 @@ const LayoutGuides = () => {
           width: '2000px',
           height: '1000px',
           pointerEvents: 'auto',
-          zIndex: 0,
+          zIndex: 1,
           overflow: 'visible',
           cursor: 'pointer'
         }}
@@ -265,6 +345,12 @@ const LayoutGuides = () => {
 
     const pathD = `M ${points.join(' L ')}`;
 
+    // Start and end points
+    const startX = padding;
+    const startY = height / 2;
+    const endX = padding + (width - 2 * padding);
+    const endY = height / 2 + amplitude * Math.sin(Math.PI * frequency);
+
     return (
       <svg
         style={{
@@ -274,7 +360,7 @@ const LayoutGuides = () => {
           width: '2000px',
           height: '1000px',
           pointerEvents: 'auto',
-          zIndex: 0,
+          zIndex: 1,
           overflow: 'visible',
           cursor: 'pointer'
         }}
@@ -292,6 +378,43 @@ const LayoutGuides = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         />
+        {/* Start marker - circle */}
+        <motion.circle
+          cx={startX}
+          cy={startY}
+          r={8}
+          fill={guideColor}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        />
+        {/* End marker - X */}
+        <motion.g
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <line
+            x1={endX - 10}
+            y1={endY - 10}
+            x2={endX + 10}
+            y2={endY + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          <line
+            x1={endX + 10}
+            y1={endY - 10}
+            x2={endX - 10}
+            y2={endY + 10}
+            stroke={guideColor}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        </motion.g>
       </svg>
     );
   };

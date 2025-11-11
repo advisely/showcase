@@ -5,9 +5,9 @@ import { exportToJSON, exportToZip, importFromFile } from '../utils/export';
 
 const Toolbar = () => {
   const fileInputRef = useRef(null);
+  const loadInputRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const bgImageInputRef = useRef(null);
-  const loadInputRef = useRef(null);
 
   const setModalOpen = useStore(state => state.setModalOpen);
   const setPendingFiles = useStore(state => state.setPendingFiles);
@@ -37,7 +37,7 @@ const Toolbar = () => {
 
   // Handle background color change
   const handleBgColorChange = (e) => {
-    setBackground({ ...background, color: e.target.value, image: null });
+    setBackground({ ...background, color: e.target.value, mode: 'color' });
     saveToStorage();
   };
 
@@ -48,7 +48,12 @@ const Toolbar = () => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      setBackground({ ...background, image: event.target.result });
+      setBackground({
+        ...background,
+        image: event.target.result,
+        mode: 'image',
+        opacity: background.opacity ?? 0.3 // Ensure opacity is set
+      });
       saveToStorage();
     };
     reader.readAsDataURL(file);
@@ -57,7 +62,7 @@ const Toolbar = () => {
 
   // Clear background
   const handleClearBg = () => {
-    setBackground({ color: '#2c3e50', image: null });
+    setBackground({ color: '#2c3e50', image: null, mode: 'color' });
     saveToStorage();
   };
 

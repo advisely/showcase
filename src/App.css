@@ -121,9 +121,7 @@ body {
   width: 100%;
   height: 100%;
   position: relative;
-  background: #2c3e50;
-  background-size: cover;
-  background-position: center;
+  /* Background is controlled by React inline styles */
   overflow: visible;
   transform-origin: center center;
   -webkit-user-select: none;
@@ -172,6 +170,10 @@ body {
   text-align: center;
   color: #888;
   padding: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
 }
 
 /* Card Styles */
@@ -393,19 +395,348 @@ body {
   white-space: nowrap;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ============================================
+   RESPONSIVE DESIGN
+   Breakpoints:
+   - Smartphone: < 640px
+   - Tablet: 640px - 1024px
+   - Laptop: 1024px - 1440px
+   - Desktop: > 1440px
+   ============================================ */
+
+/* ========== SMARTPHONE (Portrait & Landscape) ========== */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
   .toolbar {
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.2rem;
+  }
+
+  .toolbar-left span {
+    font-size: 10px;
+  }
+
+  .toolbar-left, .toolbar-center, .toolbar-right {
+    width: 100%;
+    justify-content: center;
     flex-wrap: wrap;
-    padding: 10px;
+    gap: 6px;
+  }
+
+  .btn-group {
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-width: auto;
+  }
+
+  .btn span {
+    font-size: 14px;
+  }
+
+  /* Vertical toolbar adjustments */
+  .vertical-toolbar {
+    width: 50px;
+    padding: 8px 4px;
+  }
+
+  .vertical-toolbar button {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  /* Minimap */
+  .minimap {
+    width: 120px;
+    height: 80px;
+    bottom: 10px;
+    left: 10px;
+  }
+
+  /* Background menu */
+  .background-menu-button {
+    width: 48px;
+    height: 48px;
+    bottom: 15px;
+    right: 15px;
+    font-size: 20px;
+  }
+
+  /* Cards - smaller default size on mobile */
+  .card {
+    min-width: 150px;
+    min-height: 100px;
+  }
+
+  /* Hide storage status text on mobile */
+  .saving-indicator,
+  .last-saved {
+    display: none;
+  }
+
+  .storage-error {
+    font-size: 11px;
+  }
+}
+
+/* Smartphone Landscape */
+@media (max-width: 896px) and (orientation: landscape) and (max-height: 640px) {
+  .toolbar {
+    padding: 6px 10px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1rem;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .vertical-toolbar {
+    width: 45px;
+    padding: 6px 4px;
+  }
+
+  .vertical-toolbar button {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+}
+
+/* ========== TABLET (Portrait & Landscape) ========== */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .toolbar {
+    padding: 10px 16px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.3rem;
   }
 
   .toolbar-center, .toolbar-right {
     flex-wrap: wrap;
+    gap: 8px;
   }
 
   .btn {
-    padding: 6px 12px;
+    padding: 8px 14px;
     font-size: 12px;
+  }
+
+  .btn-group {
+    gap: 6px;
+  }
+
+  .vertical-toolbar {
+    width: 55px;
+    padding: 10px 6px;
+  }
+
+  .vertical-toolbar button {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .minimap {
+    width: 160px;
+    height: 100px;
+    bottom: 15px;
+    left: 15px;
+  }
+
+  /* Cards */
+  .card {
+    min-width: 200px;
+    min-height: 133px;
+  }
+}
+
+/* Tablet Portrait - Stack toolbar items vertically if needed */
+@media (min-width: 641px) and (max-width: 768px) and (orientation: portrait) {
+  .toolbar-center {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+/* Tablet Landscape - Optimize for wider screens */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  .toolbar {
+    padding: 10px 20px;
+  }
+
+  .btn {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ========== LAPTOP ========== */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .toolbar {
+    padding: 12px 20px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.4rem;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .vertical-toolbar {
+    width: 60px;
+    padding: 12px 8px;
+  }
+
+  .vertical-toolbar button {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+
+  .minimap {
+    width: 180px;
+    height: 110px;
+  }
+
+  /* Cards - standard size */
+  .card {
+    min-width: 250px;
+    min-height: 166px;
+  }
+}
+
+/* ========== DESKTOP (Large screens) ========== */
+@media (min-width: 1441px) {
+  .toolbar {
+    padding: 14px 24px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.6rem;
+  }
+
+  .btn {
+    padding: 11px 18px;
+    font-size: 14px;
+  }
+
+  .vertical-toolbar {
+    width: 65px;
+    padding: 14px 10px;
+  }
+
+  .vertical-toolbar button {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+  }
+
+  .minimap {
+    width: 200px;
+    height: 125px;
+  }
+
+  /* Cards - larger default size on desktop */
+  .card {
+    min-width: 300px;
+    min-height: 200px;
+  }
+}
+
+/* ========== ULTRA-WIDE DESKTOP ========== */
+@media (min-width: 1920px) {
+  .toolbar-left h1 {
+    font-size: 1.8rem;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
+  .minimap {
+    width: 220px;
+    height: 140px;
+  }
+}
+
+/* ========== TOUCH DEVICE OPTIMIZATIONS ========== */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets for better usability */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .vertical-toolbar button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* Disable hover effects on touch devices */
+  .btn:hover,
+  .vertical-toolbar button:hover {
+    transform: none;
+  }
+
+  /* Increase card resize handle size */
+  .resize-handle {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ========== HIGH DPI DISPLAYS (Retina) ========== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .toolbar-left h1 {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Sharper text rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  .toolbar,
+  .vertical-toolbar,
+  .minimap,
+  .background-menu-button {
+    display: none !important;
+  }
+
+  .playfield-container {
+    overflow: visible !important;
+  }
+
+  .card {
+    break-inside: avoid;
   }
 }

@@ -72,20 +72,55 @@ const Playfield = () => {
     }
   };
 
-  // Prevent text selection during panning
+  // Prevent text selection and dragging during panning
   useEffect(() => {
     const preventSelection = (e) => e.preventDefault();
+    const preventDrag = (e) => e.preventDefault();
 
     if (playfieldRef.current) {
       playfieldRef.current.addEventListener('selectstart', preventSelection);
+      playfieldRef.current.addEventListener('dragstart', preventDrag);
+      playfieldRef.current.addEventListener('dragover', preventDrag);
     }
 
     return () => {
       if (playfieldRef.current) {
         playfieldRef.current.removeEventListener('selectstart', preventSelection);
+        playfieldRef.current.removeEventListener('dragstart', preventDrag);
+        playfieldRef.current.removeEventListener('dragover', preventDrag);
       }
     };
   }, []);
+
+  // Enhanced event prevention in hand mode - capture phase
+  useEffect(() => {
+    if (interactionMode !== 'hand' || !playfieldRef.current) return;
+
+    const preventDefaults = (e) => {
+      // Only prevent if inside playfield container
+      const playfieldContainer = playfieldRef.current?.closest('.playfield-container');
+      if (playfieldContainer?.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // Add capture-phase listeners on playfield container to intercept early
+    const container = playfieldRef.current.closest('.playfield-container');
+    if (container) {
+      container.addEventListener('mousedown', preventDefaults, { capture: true, passive: false });
+      container.addEventListener('dragstart', preventDefaults, { capture: true, passive: false });
+      container.addEventListener('selectstart', preventDefaults, { capture: true, passive: false });
+      container.addEventListener('dragover', preventDefaults, { capture: true, passive: false });
+
+      return () => {
+        container.removeEventListener('mousedown', preventDefaults, { capture: true });
+        container.removeEventListener('dragstart', preventDefaults, { capture: true });
+        container.removeEventListener('selectstart', preventDefaults, { capture: true });
+        container.removeEventListener('dragover', preventDefaults, { capture: true });
+      };
+    }
+  }, [interactionMode]);
 
   useEffect(() => {
     if (!isPanning) return;
@@ -112,12 +147,29 @@ const Playfield = () => {
     };
   }, [isPanning, panStart.x, panStart.y, setPan, saveToStorage]);
 
+  // Calculate background based on mode (use specific properties to avoid React conflicts)
+  const getBackgroundStyles = () => {
+    if (background.mode === 'gradient') {
+      return {
+        backgroundImage: `linear-gradient(${background.gradientAngle || 135}deg, ${background.color || '#2c3e50'}, ${background.gradientColor || '#34495e'})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      };
+    } else if (background.mode === 'image' && background.image) {
+      return {
+        backgroundImage: `url(${background.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    } else {
+      return {
+        backgroundColor: background.color || '#2c3e50'
+      };
+    }
+  };
+
   const playfieldStyle = {
-    background: background.image
-      ? `url(${background.image})`
-      : background.color || '#2c3e50',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
     transform: `translate(${panX}px, ${panY}px) scale(${zoomLevel})`,
     transformOrigin: 'center center',
     cursor: interactionMode === 'hand'
@@ -125,7 +177,10 @@ const Playfield = () => {
       : (isPanning ? 'grabbing' : 'default'),
     userSelect: 'none',
     WebkitUserSelect: 'none',
-    WebkitUserDrag: 'none'
+    WebkitUserDrag: 'none',
+    position: 'relative',
+    width: '100%',
+    height: '100%'
   };
 
   const playfieldContent = (
@@ -143,8 +198,37 @@ const Playfield = () => {
     </div>
   );
 
+  // Apply background to the main container
+  const containerStyle = {
+    ...getBackgroundStyles(),
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'visible'
+  };
+
   return (
-    <div className="playfield-container">
+    <div className="playfield-container" style={containerStyle}>
+      {/* Overlay for image backgrounds - above background, below everything else */}
+      {background.mode === 'image' && background.image && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `rgba(0, 0, 0, ${background.opacity ?? 0.3})`,
+            backdropFilter: background.blur > 0 ? `blur(${background.blur}px)` : 'none',
+            WebkitBackdropFilter: background.blur > 0 ? `blur(${background.blur}px)` : 'none',
+            pointerEvents: 'none',
+            zIndex: 0
+          }}
+        />
+      )}
+
       {cards.length === 0 && (
         <div style={{
           position: 'absolute',
