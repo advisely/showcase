@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+package-lock.json
 
 # Build outputs
 dist/
@@ -16,6 +17,7 @@ Thumbs.db
 # Editor files
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~

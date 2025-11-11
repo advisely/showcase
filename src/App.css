@@ -1,0 +1,742 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow: hidden;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toolbar Styles */
+.toolbar {
+  background: #1e1e1e;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 100;
+  position: relative;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.toolbar-left h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.storage-error {
+  font-size: 0.9rem;
+  color: #ff6b6b;
+  cursor: help;
+}
+
+.saving-indicator {
+  font-size: 0.85rem;
+  color: #4ade80;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.last-saved {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.toolbar-center, .toolbar-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-group {
+  display: flex;
+  gap: 5px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 2px;
+  background: #2a2a2a;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-secondary {
+  background: #3a3a3a;
+  color: #e0e0e0;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+/* Playfield Styles */
+.playfield-container {
+  flex: 1;
+  overflow: visible;
+  position: relative;
+}
+
+.playfield {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  /* Background is controlled by React inline styles */
+  overflow: visible;
+  transform-origin: center center;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Vertical Toolbar Styles */
+.vertical-toolbar {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(30, 30, 30, 0.9);
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  backdrop-filter: blur(10px);
+}
+
+.toolbar-icon-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: #3a3a3a;
+  color: #e0e0e0;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.zoom-level-display {
+  font-size: 11px;
+  text-align: center;
+  color: #888;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+}
+
+/* Card Styles */
+.card {
+  position: absolute;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  cursor: move;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  user-select: none;
+  touch-action: none;
+}
+
+.card.landscape {
+  min-width: 100px;
+  min-height: 100px;
+}
+
+.card.portrait {
+  min-width: 100px;
+  min-height: 100px;
+}
+
+.card-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  pointer-events: none;
+}
+
+.card-content img,
+.card-content video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-content .video-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, transparent 50%, #667eea 50%);
+  cursor: nwse-resize;
+  border-bottom-right-radius: 12px;
+  z-index: 10;
+}
+
+.card-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(231, 76, 60, 0.9);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.card:hover .card-delete {
+  opacity: 1;
+}
+
+.card-delete:hover {
+  background: rgba(192, 57, 43, 1);
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #2a2a2a;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  min-width: 400px;
+}
+
+.modal-content h2 {
+  margin-bottom: 24px;
+  text-align: center;
+  color: #e0e0e0;
+}
+
+.orientation-options {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+
+.orientation-btn {
+  background: #3a3a3a;
+  border: 2px solid #555;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #e0e0e0;
+}
+
+.orientation-preview {
+  border: 3px solid #667eea;
+  background: #f5f5f5;
+}
+
+.orientation-preview.landscape {
+  width: 120px;
+  height: 80px;
+}
+
+.orientation-preview.portrait {
+  width: 80px;
+  height: 120px;
+}
+
+/* Maximized View Styles */
+.maximized-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maximized-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: rgba(231, 76, 60, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.maximized-media-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  transition: transform 0.2s;
+}
+
+.zoom-indicator {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #999;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   Breakpoints:
+   - Smartphone: < 640px
+   - Tablet: 640px - 1024px
+   - Laptop: 1024px - 1440px
+   - Desktop: > 1440px
+   ============================================ */
+
+/* ========== SMARTPHONE (Portrait & Landscape) ========== */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.2rem;
+  }
+
+  .toolbar-left span {
+    font-size: 10px;
+  }
+
+  .toolbar-left, .toolbar-center, .toolbar-right {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn-group {
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-width: auto;
+  }
+
+  .btn span {
+    font-size: 14px;
+  }
+
+  /* Vertical toolbar adjustments */
+  .vertical-toolbar {
+    width: 50px;
+    padding: 8px 4px;
+  }
+
+  .vertical-toolbar button {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  /* Minimap */
+  .minimap {
+    width: 120px;
+    height: 80px;
+    bottom: 10px;
+    left: 10px;
+  }
+
+  /* Background menu */
+  .background-menu-button {
+    width: 48px;
+    height: 48px;
+    bottom: 15px;
+    right: 15px;
+    font-size: 20px;
+  }
+
+  /* Cards - smaller default size on mobile */
+  .card {
+    min-width: 150px;
+    min-height: 100px;
+  }
+
+  /* Hide storage status text on mobile */
+  .saving-indicator,
+  .last-saved {
+    display: none;
+  }
+
+  .storage-error {
+    font-size: 11px;
+  }
+}
+
+/* Smartphone Landscape */
+@media (max-width: 896px) and (orientation: landscape) and (max-height: 640px) {
+  .toolbar {
+    padding: 6px 10px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1rem;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .vertical-toolbar {
+    width: 45px;
+    padding: 6px 4px;
+  }
+
+  .vertical-toolbar button {
+    width: 38px;
+    height: 38px;
+    font-size: 16px;
+  }
+}
+
+/* ========== TABLET (Portrait & Landscape) ========== */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .toolbar {
+    padding: 10px 16px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.3rem;
+  }
+
+  .toolbar-center, .toolbar-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .btn-group {
+    gap: 6px;
+  }
+
+  .vertical-toolbar {
+    width: 55px;
+    padding: 10px 6px;
+  }
+
+  .vertical-toolbar button {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .minimap {
+    width: 160px;
+    height: 100px;
+    bottom: 15px;
+    left: 15px;
+  }
+
+  /* Cards */
+  .card {
+    min-width: 200px;
+    min-height: 133px;
+  }
+}
+
+/* Tablet Portrait - Stack toolbar items vertically if needed */
+@media (min-width: 641px) and (max-width: 768px) and (orientation: portrait) {
+  .toolbar-center {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+/* Tablet Landscape - Optimize for wider screens */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  .toolbar {
+    padding: 10px 20px;
+  }
+
+  .btn {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ========== LAPTOP ========== */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .toolbar {
+    padding: 12px 20px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.4rem;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .vertical-toolbar {
+    width: 60px;
+    padding: 12px 8px;
+  }
+
+  .vertical-toolbar button {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+
+  .minimap {
+    width: 180px;
+    height: 110px;
+  }
+
+  /* Cards - standard size */
+  .card {
+    min-width: 250px;
+    min-height: 166px;
+  }
+}
+
+/* ========== DESKTOP (Large screens) ========== */
+@media (min-width: 1441px) {
+  .toolbar {
+    padding: 14px 24px;
+  }
+
+  .toolbar-left h1 {
+    font-size: 1.6rem;
+  }
+
+  .btn {
+    padding: 11px 18px;
+    font-size: 14px;
+  }
+
+  .vertical-toolbar {
+    width: 65px;
+    padding: 14px 10px;
+  }
+
+  .vertical-toolbar button {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+  }
+
+  .minimap {
+    width: 200px;
+    height: 125px;
+  }
+
+  /* Cards - larger default size on desktop */
+  .card {
+    min-width: 300px;
+    min-height: 200px;
+  }
+}
+
+/* ========== ULTRA-WIDE DESKTOP ========== */
+@media (min-width: 1920px) {
+  .toolbar-left h1 {
+    font-size: 1.8rem;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    font-size: 15px;
+  }
+
+  .minimap {
+    width: 220px;
+    height: 140px;
+  }
+}
+
+/* ========== TOUCH DEVICE OPTIMIZATIONS ========== */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets for better usability */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .vertical-toolbar button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* Disable hover effects on touch devices */
+  .btn:hover,
+  .vertical-toolbar button:hover {
+    transform: none;
+  }
+
+  /* Increase card resize handle size */
+  .resize-handle {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ========== HIGH DPI DISPLAYS (Retina) ========== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .toolbar-left h1 {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Sharper text rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  .toolbar,
+  .vertical-toolbar,
+  .minimap,
+  .background-menu-button {
+    display: none !important;
+  }
+
+  .playfield-container {
+    overflow: visible !important;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+}

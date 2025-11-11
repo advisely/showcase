@@ -2,117 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="Showcase - Modern interactive presentation builder with drag-and-drop simplicity">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Showcase">
     <title>Showcase - Flexible Presentation App</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Top Toolbar -->
-        <header class="toolbar">
-            <div class="toolbar-left">
-                <h1>Showcase</h1>
-            </div>
-            <div class="toolbar-center">
-                <button id="addMediaBtn" class="btn btn-primary">
-                    <span>📎</span> Add Media
-                </button>
-                <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display: none;">
-
-                <div class="btn-group">
-                    <button id="layoutCircleBtn" class="btn btn-secondary" title="Arrange in Circle">
-                        <span>⭕</span> Circle
-                    </button>
-                    <button id="layoutCurveBtn" class="btn btn-secondary" title="Arrange in Curve">
-                        <span>〰️</span> Curve
-                    </button>
-                    <button id="layoutGridBtn" class="btn btn-secondary" title="Arrange in Grid">
-                        <span>▦</span> Grid
-                    </button>
-                    <button id="layoutLineBtn" class="btn btn-secondary" title="Arrange in Line">
-                        <span>━</span> Line
-                    </button>
-                </div>
-            </div>
-            <div class="toolbar-right">
-                <button id="bgColorBtn" class="btn btn-secondary" title="Background Color">
-                    <span>🎨</span>
-                </button>
-                <input type="color" id="bgColorPicker" value="#2c3e50" style="display: none;">
-
-                <button id="bgImageBtn" class="btn btn-secondary" title="Background Image">
-                    <span>🖼️</span>
-                </button>
-                <input type="file" id="bgImageInput" accept="image/*" style="display: none;">
-
-                <button id="clearBgBtn" class="btn btn-secondary" title="Clear Background">
-                    <span>🗑️</span>
-                </button>
-
-                <button id="saveBtn" class="btn btn-success" title="Save Presentation (Embedded Media)">
-                    <span>💾</span> Save
-                </button>
-                <button id="exportFolderBtn" class="btn btn-success" title="Export with External Media (Hybrid)">
-                    <span>📦</span> Export
-                </button>
-                <button id="loadBtn" class="btn btn-success" title="Load Presentation">
-                    <span>📂</span> Load
-                </button>
-                <input type="file" id="loadInput" accept=".json,.zip" style="display: none;">
-            </div>
-        </header>
-
-        <!-- Main Playfield -->
-        <div class="playfield-container">
-            <!-- Vertical Toolbar -->
-            <div class="vertical-toolbar">
-                <button id="zoomInBtn" class="toolbar-icon-btn" title="Zoom In">
-                    <span>+</span>
-                </button>
-                <button id="zoomOutBtn" class="toolbar-icon-btn" title="Zoom Out">
-                    <span>−</span>
-                </button>
-                <button id="refocusBtn" class="toolbar-icon-btn" title="Refocus">
-                    <span>⊙</span>
-                </button>
-            </div>
-
-            <div id="playfield" class="playfield">
-                <!-- Cards will be added here dynamically -->
-            </div>
-        </div>
-
-        <!-- Card Orientation Selector Modal -->
-        <div id="orientationModal" class="modal hidden">
-            <div class="modal-content">
-                <h2>Select Card Orientation</h2>
-                <div class="orientation-options">
-                    <button id="landscapeBtn" class="orientation-btn">
-                        <div class="orientation-preview landscape"></div>
-                        <span>Landscape</span>
-                    </button>
-                    <button id="portraitBtn" class="orientation-btn">
-                        <div class="orientation-preview portrait"></div>
-                        <span>Portrait</span>
-                    </button>
-                </div>
-                <button id="cancelOrientationBtn" class="btn btn-secondary">Cancel</button>
-            </div>
-        </div>
-
-        <!-- Maximized Card View -->
-        <div id="maximizedView" class="maximized-view hidden">
-            <div class="maximized-content">
-                <button id="closeMaximizedBtn" class="close-btn">✕</button>
-                <div id="maximizedMediaContainer" class="maximized-media-container">
-                    <!-- Media will be displayed here -->
-                </div>
-                <div class="zoom-indicator">Scroll to zoom</div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
