@@ -1,0 +1,237 @@
+import { useRef } from 'react';
+import { motion } from 'framer-motion';
+import useStore from '../store/useStore';
+import { exportToJSON, exportToZip, importFromFile } from '../utils/export';
+
+const Toolbar = () => {
+  const fileInputRef = useRef(null);
+  const bgColorPickerRef = useRef(null);
+  const bgImageInputRef = useRef(null);
+  const loadInputRef = useRef(null);
+
+  const setModalOpen = useStore(state => state.setModalOpen);
+  const setPendingFiles = useStore(state => state.setPendingFiles);
+  const setBackground = useStore(state => state.setBackground);
+  const background = useStore(state => state.background);
+  const arrangeInCircle = useStore(state => state.arrangeInCircle);
+  const arrangeInCurve = useStore(state => state.arrangeInCurve);
+  const arrangeInGrid = useStore(state => state.arrangeInGrid);
+  const arrangeInLine = useStore(state => state.arrangeInLine);
+  const saveToStorage = useStore(state => state.saveToStorage);
+  const cards = useStore(state => state.cards);
+  const videoFiles = useStore(state => state.videoFiles);
+  const isSaving = useStore(state => state.isSaving);
+  const lastSaved = useStore(state => state.lastSaved);
+  const storageError = useStore(state => state.storageError);
+
+  // Handle file selection for media upload
+  const handleFileSelection = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setPendingFiles(files);
+      setModalOpen(true);
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  // Handle background color change
+  const handleBgColorChange = (e) => {
+    setBackground({ ...background, color: e.target.value, image: null });
+    saveToStorage();
+  };
+
+  // Handle background image upload
+  const handleBgImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setBackground({ ...background, image: event.target.result });
+      saveToStorage();
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Clear background
+  const handleClearBg = () => {
+    setBackground({ color: '#2c3e50', image: null });
+    saveToStorage();
+  };
+
+  // Layout handlers
+  const handleLayout = (layoutFn) => {
+    layoutFn();
+    saveToStorage();
+  };
+
+  return (
+    <motion.header
+      className="toolbar"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="toolbar-left">
+        <h1>Showcase</h1>
+        {storageError && (
+          <span className="storage-error" title={storageError}>
+            ⚠️ Storage Issue
+          </span>
+        )}
+        {isSaving && (
+          <span className="saving-indicator">💾 Saving...</span>
+        )}
+        {lastSaved && !isSaving && (
+          <span className="last-saved">
+            ✓ Saved {new Date(lastSaved).toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
+      <div className="toolbar-center">
+        <motion.button
+          className="btn btn-primary"
+          onClick={() => fileInputRef.current?.click()}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>📎</span> Add Media
+        </motion.button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileSelection}
+        />
+
+        <div className="btn-group">
+          <motion.button
+            className="btn btn-secondary"
+            onClick={() => handleLayout(arrangeInCircle)}
+            title="Arrange in Circle"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>⭕</span> Circle
+          </motion.button>
+          <motion.button
+            className="btn btn-secondary"
+            onClick={() => handleLayout(arrangeInCurve)}
+            title="Arrange in Curve"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>〰️</span> Curve
+          </motion.button>
+          <motion.button
+            className="btn btn-secondary"
+            onClick={() => handleLayout(arrangeInGrid)}
+            title="Arrange in Grid"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>▦</span> Grid
+          </motion.button>
+          <motion.button
+            className="btn btn-secondary"
+            onClick={() => handleLayout(arrangeInLine)}
+            title="Arrange in Line"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>━</span> Line
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="toolbar-right">
+        <motion.button
+          className="btn btn-secondary"
+          onClick={() => bgColorPickerRef.current?.click()}
+          title="Background Color"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>🎨</span>
+        </motion.button>
+        <input
+          ref={bgColorPickerRef}
+          type="color"
+          value={background.color || '#2c3e50'}
+          style={{ display: 'none' }}
+          onChange={handleBgColorChange}
+        />
+
+        <motion.button
+          className="btn btn-secondary"
+          onClick={() => bgImageInputRef.current?.click()}
+          title="Background Image"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>🖼️</span>
+        </motion.button>
+        <input
+          ref={bgImageInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleBgImageChange}
+        />
+
+        <motion.button
+          className="btn btn-secondary"
+          onClick={handleClearBg}
+          title="Clear Background"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>🗑️</span>
+        </motion.button>
+
+        <motion.button
+          className="btn btn-success"
+          onClick={() => exportToJSON(cards, background)}
+          title="Save Presentation (Embedded Media)"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>💾</span> Save
+        </motion.button>
+
+        <motion.button
+          className="btn btn-success"
+          onClick={() => exportToZip(cards, background, videoFiles)}
+          title="Export with External Media (Hybrid)"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>📦</span> Export
+        </motion.button>
+
+        <motion.button
+          className="btn btn-success"
+          onClick={() => loadInputRef.current?.click()}
+          title="Load Presentation"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <span>📂</span> Load
+        </motion.button>
+        <input
+          ref={loadInputRef}
+          type="file"
+          accept=".json,.zip"
+          style={{ display: 'none' }}
+          onChange={(e) => importFromFile(e.target.files[0])}
+        />
+      </div>
+    </motion.header>
+  );
+};
+
+export default Toolbar;
