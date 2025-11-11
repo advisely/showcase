@@ -5,11 +5,19 @@ const LayoutGuides = () => {
   const activeLayout = useStore(state => state.activeLayout);
   const cards = useStore(state => state.cards);
   const background = useStore(state => state.background);
+  const layoutSettings = useStore(state => state.layoutSettings);
+  const setLayoutMenuOpen = useStore(state => state.setLayoutMenuOpen);
+  const setLayoutMenuPosition = useStore(state => state.setLayoutMenuPosition);
 
   if (!activeLayout || cards.length === 0) return null;
 
   // Smart color detection - get contrasting color based on background
   const getContrastColor = () => {
+    // Use custom color from settings if available
+    if (layoutSettings.color) {
+      return layoutSettings.color;
+    }
+
     let bgColor = background.color || '#2c3e50';
 
     // If background has an image, use a bright contrasting color
@@ -37,6 +45,14 @@ const LayoutGuides = () => {
   };
 
   const guideColor = getContrastColor();
+  const strokeWidth = layoutSettings.strokeWidth || 4;
+
+  // Handle guide click to open customization menu
+  const handleGuideClick = (e) => {
+    e.stopPropagation();
+    setLayoutMenuPosition({ x: e.clientX, y: e.clientY });
+    setLayoutMenuOpen(true);
+  };
 
   const renderCircleGuide = () => {
     const centerX = 800;
@@ -51,10 +67,12 @@ const LayoutGuides = () => {
           left: 0,
           width: '2000px',
           height: '1000px',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
           zIndex: 0,
-          overflow: 'visible'
+          overflow: 'visible',
+          cursor: 'pointer'
         }}
+        onClick={handleGuideClick}
       >
         <motion.circle
           cx={centerX}
@@ -62,7 +80,7 @@ const LayoutGuides = () => {
           r={radius}
           fill="none"
           stroke={guideColor}
-          strokeWidth="4"
+          strokeWidth={strokeWidth}
           strokeDasharray="15,10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -97,10 +115,12 @@ const LayoutGuides = () => {
           left: 0,
           width: '2000px',
           height: '1000px',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
           zIndex: 0,
-          overflow: 'visible'
+          overflow: 'visible',
+          cursor: 'pointer'
         }}
+        onClick={handleGuideClick}
       >
         <motion.line
           x1={startX}
@@ -108,7 +128,7 @@ const LayoutGuides = () => {
           x2={endX}
           y2={y}
           stroke={guideColor}
-          strokeWidth="4"
+          strokeWidth={strokeWidth}
           strokeDasharray="15,10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -143,16 +163,18 @@ const LayoutGuides = () => {
           left: 0,
           width: '2000px',
           height: '1000px',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
           zIndex: 0,
-          overflow: 'visible'
+          overflow: 'visible',
+          cursor: 'pointer'
         }}
+        onClick={handleGuideClick}
       >
         <motion.path
           d={pathD}
           fill="none"
           stroke={guideColor}
-          strokeWidth="4"
+          strokeWidth={strokeWidth}
           strokeDasharray="15,10"
           strokeLinecap="round"
           initial={{ opacity: 0 }}
@@ -196,10 +218,12 @@ const LayoutGuides = () => {
           left: 0,
           width: '2000px',
           height: '1000px',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
           zIndex: 0,
-          overflow: 'visible'
+          overflow: 'visible',
+          cursor: 'pointer'
         }}
+        onClick={handleGuideClick}
       >
         {gridCells.map((cell, index) => (
           <motion.rect
@@ -210,7 +234,7 @@ const LayoutGuides = () => {
             height={cardHeight}
             fill="none"
             stroke={guideColor}
-            strokeWidth="3"
+            strokeWidth={strokeWidth}
             strokeDasharray="15,10"
             rx="12"
             initial={{ opacity: 0 }}
@@ -223,12 +247,62 @@ const LayoutGuides = () => {
     );
   };
 
+  const renderSnakeGuide = () => {
+    const width = 1600;
+    const height = 800;
+    const padding = 100;
+    const amplitude = 120;
+    const frequency = 3;
+    const points = [];
+
+    // Generate snake pattern points
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      const x = padding + (width - 2 * padding) * t;
+      const y = height / 2 + amplitude * Math.sin(t * Math.PI * frequency);
+      points.push(`${x},${y}`);
+    }
+
+    const pathD = `M ${points.join(' L ')}`;
+
+    return (
+      <svg
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '2000px',
+          height: '1000px',
+          pointerEvents: 'auto',
+          zIndex: 0,
+          overflow: 'visible',
+          cursor: 'pointer'
+        }}
+        onClick={handleGuideClick}
+      >
+        <motion.path
+          d={pathD}
+          fill="none"
+          stroke={guideColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray="15,10"
+          strokeLinecap="round"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        />
+      </svg>
+    );
+  };
+
   return (
     <AnimatePresence>
       {activeLayout === 'circle' && renderCircleGuide()}
       {activeLayout === 'line' && renderLineGuide()}
       {activeLayout === 'curve' && renderCurveGuide()}
       {activeLayout === 'grid' && renderGridGuide()}
+      {activeLayout === 'snake' && renderSnakeGuide()}
     </AnimatePresence>
   );
 };

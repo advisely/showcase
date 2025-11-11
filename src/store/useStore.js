@@ -15,7 +15,13 @@ const useStore = create((set, get) => ({
   panX: 0,
   panY: 0,
   interactionMode: 'cursor', // 'cursor' or 'hand'
-  activeLayout: null, // 'circle', 'line', 'curve', 'grid', or null
+  activeLayout: null, // 'circle', 'line', 'curve', 'grid', 'snake', or null
+  layoutSettings: {
+    strokeWidth: 4,
+    color: 'rgba(0, 255, 255, 0.8)'
+  },
+  layoutMenuOpen: false,
+  layoutMenuPosition: { x: 0, y: 0 },
   selectedOrientation: null,
   pendingFiles: [],
   isModalOpen: false,
@@ -75,6 +81,14 @@ const useStore = create((set, get) => ({
   })),
 
   setActiveLayout: (layout) => set({ activeLayout: layout }),
+
+  setLayoutSettings: (settings) => set((state) => ({
+    layoutSettings: { ...state.layoutSettings, ...settings }
+  })),
+
+  setLayoutMenuOpen: (isOpen) => set({ layoutMenuOpen: isOpen }),
+
+  setLayoutMenuPosition: (position) => set({ layoutMenuPosition: position }),
 
   setSelectedOrientation: (orientation) => set({ selectedOrientation: orientation }),
 
@@ -182,6 +196,33 @@ const useStore = create((set, get) => ({
     });
 
     return { cards: updatedCards, activeLayout: 'line' };
+  }),
+
+  arrangeInSnake: () => set((state) => {
+    if (state.cards.length === 0) return state;
+
+    const width = 1600;
+    const height = 800;
+    const padding = 100;
+    const amplitude = 120; // Wave amplitude
+    const frequency = 3; // Number of complete waves
+
+    const updatedCards = state.cards.map((card, index) => {
+      const t = index / (state.cards.length - 1 || 1);
+      const x = padding + (width - 2 * padding) * t;
+
+      // Snake pattern: alternating S-curve
+      const y = height / 2 +
+        amplitude * Math.sin(t * Math.PI * frequency) -
+        (card.size?.height || 200) / 2;
+
+      return {
+        ...card,
+        position: { x, y }
+      };
+    });
+
+    return { cards: updatedCards, activeLayout: 'snake' };
   }),
 
   // Save/Load functionality

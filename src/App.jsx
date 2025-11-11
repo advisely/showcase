@@ -5,6 +5,7 @@ import VerticalToolbar from './components/VerticalToolbar';
 import OrientationModal from './components/OrientationModal';
 import MaximizedView from './components/MaximizedView';
 import Minimap from './components/Minimap';
+import LayoutCustomizationMenu from './components/LayoutCustomizationMenu';
 import useStore from './store/useStore';
 import { migrateFromLocalStorage } from './utils/storage';
 import './App.css';
@@ -36,6 +37,7 @@ function App() {
       <OrientationModal />
       <MaximizedView />
       <Minimap />
+      <LayoutCustomizationMenu />
     </div>
   );
 }

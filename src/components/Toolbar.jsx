@@ -17,6 +17,7 @@ const Toolbar = () => {
   const arrangeInCurve = useStore(state => state.arrangeInCurve);
   const arrangeInGrid = useStore(state => state.arrangeInGrid);
   const arrangeInLine = useStore(state => state.arrangeInLine);
+  const arrangeInSnake = useStore(state => state.arrangeInSnake);
   const saveToStorage = useStore(state => state.saveToStorage);
   const cards = useStore(state => state.cards);
   const videoFiles = useStore(state => state.videoFiles);
@@ -147,6 +148,15 @@ const Toolbar = () => {
             whileTap={{ scale: 0.95 }}
           >
             <span>━</span> Line
+          </motion.button>
+          <motion.button
+            className="btn btn-secondary"
+            onClick={() => handleLayout(arrangeInSnake)}
+            title="Arrange in Snake"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>〰</span> Snake
           </motion.button>
         </div>
       </div>
