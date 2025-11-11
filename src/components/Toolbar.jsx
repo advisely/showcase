@@ -1,13 +1,25 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import useStore from '../store/useStore';
 import { exportToJSON, exportToZip, importFromFile } from '../utils/export';
+import SaveDialog from './SaveDialog';
+import SaveMenu from './SaveMenu';
+import SettingsMenu from './SettingsMenu';
+import CardSettings from './CardSettings';
 
 const Toolbar = () => {
   const fileInputRef = useRef(null);
   const loadInputRef = useRef(null);
   const bgColorPickerRef = useRef(null);
   const bgImageInputRef = useRef(null);
+  const saveButtonRef = useRef(null);
+  const settingsButtonRef = useRef(null);
+
+  const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [saveDialogMode, setSaveDialogMode] = useState('json'); // 'json' or 'zip'
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isCardSettingsOpen, setIsCardSettingsOpen] = useState(false);
 
   const setModalOpen = useStore(state => state.setModalOpen);
   const setPendingFiles = useStore(state => state.setPendingFiles);
@@ -24,6 +36,9 @@ const Toolbar = () => {
   const isSaving = useStore(state => state.isSaving);
   const lastSaved = useStore(state => state.lastSaved);
   const storageError = useStore(state => state.storageError);
+  const projectName = useStore(state => state.projectName);
+  const setProjectName = useStore(state => state.setProjectName);
+  const setBackgroundMenuOpen = useStore(state => state.setBackgroundMenuOpen);
 
   // Handle file selection for media upload
   const handleFileSelection = (e) => {
@@ -70,6 +85,50 @@ const Toolbar = () => {
   const handleLayout = (layoutFn) => {
     layoutFn();
     saveToStorage();
+  };
+
+  // Save handlers
+  const handleSaveButtonClick = () => {
+    setIsSaveMenuOpen(!isSaveMenuOpen);
+  };
+
+  const handleQuickSave = () => {
+    // Save with default timestamp-based name
+    exportToJSON(cards, background, null);
+  };
+
+  const handleSaveAs = () => {
+    setSaveDialogMode('json');
+    setIsSaveDialogOpen(true);
+  };
+
+  const handleExport = () => {
+    setSaveDialogMode('zip');
+    setIsSaveDialogOpen(true);
+  };
+
+  const handleSaveConfirm = (name) => {
+    setProjectName(name);
+    saveToStorage();
+
+    if (saveDialogMode === 'json') {
+      exportToJSON(cards, background, name);
+    } else {
+      exportToZip(cards, background, videoFiles, name);
+    }
+  };
+
+  // Settings handlers
+  const handleSettingsButtonClick = () => {
+    setIsSettingsMenuOpen(!isSettingsMenuOpen);
+  };
+
+  const handleBackgroundSettings = () => {
+    setBackgroundMenuOpen(true);
+  };
+
+  const handleCardSettings = () => {
+    setIsCardSettingsOpen(true);
   };
 
   return (
@@ -167,64 +226,50 @@ const Toolbar = () => {
       </div>
 
       <div className="toolbar-right">
-        <motion.button
-          className="btn btn-secondary"
-          onClick={() => bgColorPickerRef.current?.click()}
-          title="Background Color"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <span>🎨</span>
-        </motion.button>
-        <input
-          ref={bgColorPickerRef}
-          type="color"
-          value={background.color || '#2c3e50'}
-          style={{ display: 'none' }}
-          onChange={handleBgColorChange}
-        />
+        <div style={{ position: 'relative' }}>
+          <motion.button
+            ref={settingsButtonRef}
+            className="btn btn-secondary"
+            onClick={handleSettingsButtonClick}
+            title="Settings"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>⚙️</span> Settings
+          </motion.button>
+          <SettingsMenu
+            isOpen={isSettingsMenuOpen}
+            onClose={() => setIsSettingsMenuOpen(false)}
+            onBackgroundSettings={handleBackgroundSettings}
+            onCardSettings={handleCardSettings}
+            buttonRef={settingsButtonRef}
+          />
+        </div>
 
-        <motion.button
-          className="btn btn-secondary"
-          onClick={() => bgImageInputRef.current?.click()}
-          title="Background Image"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <span>🖼️</span>
-        </motion.button>
-        <input
-          ref={bgImageInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleBgImageChange}
-        />
-
-        <motion.button
-          className="btn btn-secondary"
-          onClick={handleClearBg}
-          title="Clear Background"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <span>🗑️</span>
-        </motion.button>
+        <div style={{ position: 'relative' }}>
+          <motion.button
+            ref={saveButtonRef}
+            className="btn btn-success"
+            onClick={handleSaveButtonClick}
+            title="Save Presentation"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span>💾</span> Save
+          </motion.button>
+          <SaveMenu
+            isOpen={isSaveMenuOpen}
+            onClose={() => setIsSaveMenuOpen(false)}
+            onSave={handleQuickSave}
+            onSaveAs={handleSaveAs}
+            buttonRef={saveButtonRef}
+          />
+        </div>
 
         <motion.button
           className="btn btn-success"
-          onClick={() => exportToJSON(cards, background)}
-          title="Save Presentation (Embedded Media)"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <span>💾</span> Save
-        </motion.button>
-
-        <motion.button
-          className="btn btn-success"
-          onClick={() => exportToZip(cards, background, videoFiles)}
-          title="Export with External Media (Hybrid)"
+          onClick={handleExport}
+          title="Export with External Media (ZIP)"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -248,6 +293,19 @@ const Toolbar = () => {
           onChange={(e) => importFromFile(e.target.files[0])}
         />
       </div>
+
+      <SaveDialog
+        isOpen={isSaveDialogOpen}
+        onClose={() => setIsSaveDialogOpen(false)}
+        onSave={handleSaveConfirm}
+        currentName={projectName}
+        title={saveDialogMode === 'json' ? 'Save Presentation' : 'Export Presentation'}
+      />
+
+      <CardSettings
+        isOpen={isCardSettingsOpen}
+        onClose={() => setIsCardSettingsOpen(false)}
+      />
     </motion.header>
   );
 };

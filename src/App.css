@@ -740,3 +740,367 @@ body {
     break-inside: avoid;
   }
 }
+
+/* ========== SAVE MENU ========== */
+.save-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  min-width: 220px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.save-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.save-menu-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.save-menu-text {
+  flex: 1;
+}
+
+.save-menu-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.save-menu-desc {
+  color: #888;
+  font-size: 12px;
+}
+
+.save-menu-divider {
+  height: 1px;
+  background: #444;
+  margin: 0;
+}
+
+/* ========== SETTINGS MENU ========== */
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  min-width: 240px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.settings-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.settings-menu-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.settings-menu-text {
+  flex: 1;
+}
+
+.settings-menu-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.settings-menu-desc {
+  color: #888;
+  font-size: 12px;
+}
+
+.settings-menu-divider {
+  height: 1px;
+  background: #444;
+  margin: 0;
+}
+
+/* ========== CARD SETTINGS DIALOG ========== */
+.card-settings-dialog {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  z-index: 1001;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #444;
+  background: #1e1e1e;
+}
+
+.card-settings-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.card-settings-body {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.setting-group {
+  margin-bottom: 24px;
+}
+
+.setting-group label {
+  display: block;
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.opacity-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #1e1e1e;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.opacity-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.opacity-slider::-moz-range-thumb:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.opacity-value {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: right;
+}
+
+.setting-hint {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.preview-container {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #444;
+}
+
+.preview-label {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.backdrop-preview {
+  position: relative;
+  height: 150px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.preview-card {
+  background: #fff;
+  color: #2a2a2a;
+  padding: 20px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card-settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #444;
+  background: #1e1e1e;
+}
+
+/* ========== SAVE DIALOG ========== */
+.save-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 450px;
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.save-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #444;
+  background: #1e1e1e;
+}
+
+.save-dialog-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #444;
+  color: #fff;
+}
+
+.save-dialog-body {
+  padding: 24px;
+}
+
+.save-dialog-body label {
+  display: block;
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.save-dialog-body input[type="text"] {
+  width: 100%;
+  padding: 12px 16px;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.save-dialog-body input[type="text"]:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.save-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #444;
+  background: #1e1e1e;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}

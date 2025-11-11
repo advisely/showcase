@@ -6,7 +6,7 @@ const OrientationModal = () => {
   const pendingFiles = useStore(state => state.pendingFiles);
   const setModalOpen = useStore(state => state.setModalOpen);
   const setPendingFiles = useStore(state => state.setPendingFiles);
-  const addCard = useStore(state => state.addCard);
+  const reserveCardIds = useStore(state => state.reserveCardIds);
   const setVideoFile = useStore(state => state.setVideoFile);
   const saveToStorage = useStore(state => state.saveToStorage);
 
@@ -16,39 +16,53 @@ const OrientationModal = () => {
       return;
     }
 
+    // Reserve card IDs upfront to prevent duplicate IDs when processing multiple files
+    const reservedIds = reserveCardIds(pendingFiles.length);
+
     // Process all pending files
-    pendingFiles.forEach(file => {
+    pendingFiles.forEach((file, index) => {
       const isVideo = file.type.startsWith('video/');
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        // Center position on screen
+        // Center position on screen with offset for multiple files
         const cardWidth = orientation === 'landscape' ? 300 : 200;
         const cardHeight = orientation === 'landscape' ? 200 : 300;
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight - 100; // Account for toolbar
 
+        // Offset each card slightly so they don't all stack on top of each other
+        const offset = index * 30;
+
         const cardData = {
+          id: reservedIds[index], // Use pre-reserved ID
           orientation,
           mediaType: isVideo ? 'video' : 'image',
           mediaSrc: e.target.result,
           videoFilename: isVideo ? file.name : null,
           position: {
-            x: (viewportWidth / 2) - (cardWidth / 2),
-            y: (viewportHeight / 2) - (cardHeight / 2)
+            x: (viewportWidth / 2) - (cardWidth / 2) + offset,
+            y: (viewportHeight / 2) - (cardHeight / 2) + offset
           },
           size: {
             width: cardWidth,
             height: cardHeight
-          }
+          },
+          timestamp: Date.now()
         };
 
-        const card = addCard(cardData);
+        // Add card directly to store without generating a new ID
+        useStore.setState((state) => ({
+          cards: [...state.cards, cardData]
+        }));
 
         // Store video file reference
         if (isVideo) {
-          setVideoFile(card.id, file);
+          setVideoFile(reservedIds[index], file);
         }
+
+        // Save after each card is added to ensure state is persisted
+        saveToStorage();
       };
 
       reader.readAsDataURL(file);
@@ -57,7 +71,6 @@ const OrientationModal = () => {
     // Close modal and clear pending files
     setModalOpen(false);
     setPendingFiles([]);
-    saveToStorage();
   };
 
   const handleCancel = () => {

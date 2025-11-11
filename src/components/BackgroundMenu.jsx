@@ -6,8 +6,10 @@ const BackgroundMenu = () => {
   const background = useStore(state => state.background);
   const setBackground = useStore(state => state.setBackground);
   const saveToStorage = useStore(state => state.saveToStorage);
+  const backgroundMenuOpen = useStore(state => state.backgroundMenuOpen);
+  const setBackgroundMenuOpen = useStore(state => state.setBackgroundMenuOpen);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = backgroundMenuOpen;
   const [mode, setMode] = useState(background.image ? 'image' : 'color'); // 'color', 'gradient', 'image'
   const [opacity, setOpacity] = useState(background.opacity || 0.3);
   const [blur, setBlur] = useState(background.blur || 0);
@@ -93,61 +95,78 @@ const BackgroundMenu = () => {
 
   return (
     <>
-      {/* Floating Background Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '240px',
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          border: 'none',
-          color: 'white',
-          fontSize: '24px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        title="Background Settings"
-      >
-        🎨
-      </motion.button>
-
       {/* Background Menu Panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 400 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 400 }}
-            transition={{ type: 'spring', damping: 25 }}
-            style={{
-              position: 'fixed',
-              right: '240px',
-              bottom: '90px',
-              width: '320px',
-              maxHeight: '70vh',
-              background: '#2a2a2a',
-              borderRadius: '16px',
-              padding: '20px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              border: '1px solid #444',
-              zIndex: 1000,
-              overflowY: 'auto',
-              color: '#e0e0e0'
-            }}
-          >
-            <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '600' }}>
-              Background Settings
-            </h3>
+          <>
+            {/* Backdrop overlay - click to close */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setBackgroundMenuOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.3)',
+                zIndex: 999
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 400 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 400 }}
+              transition={{ type: 'spring', damping: 25 }}
+              style={{
+                position: 'fixed',
+                right: '240px',
+                bottom: '90px',
+                width: '320px',
+                maxHeight: '70vh',
+                background: '#2a2a2a',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                border: '1px solid #444',
+                zIndex: 1000,
+                overflowY: 'auto',
+                color: '#e0e0e0'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                  Background Settings
+                </h3>
+                <button
+                  onClick={() => setBackgroundMenuOpen(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#888',
+                    fontSize: '28px',
+                    cursor: 'pointer',
+                    padding: '0',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s',
+                    position: 'static'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#444';
+                    e.currentTarget.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.color = '#888';
+                  }}
+                >
+                  ×
+                </button>
+              </div>
 
             {/* Mode Selection */}
             <div style={{ marginBottom: '20px' }}>
@@ -420,7 +439,8 @@ const BackgroundMenu = () => {
                 />
               </div>
             )}
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

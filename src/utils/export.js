@@ -2,8 +2,20 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import useStore from '../store/useStore';
 
+// Helper function to format date as YYYY-MM-DD-hh-mm-ss
+const formatDateForFilename = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+};
+
 // Export presentation as JSON
-export const exportToJSON = (cards, background) => {
+export const exportToJSON = (cards, background, filename = null) => {
   const data = {
     version: '2.0',
     timestamp: Date.now(),
@@ -20,14 +32,21 @@ export const exportToJSON = (cards, background) => {
 
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  saveAs(blob, `showcase-${Date.now()}.json`);
+
+  // Use custom filename or generate one with formatted date
+  const finalFilename = filename
+    ? `${filename}.json`
+    : `showcase-${formatDateForFilename()}.json`;
+
+  saveAs(blob, finalFilename);
 };
 
 // Export presentation as ZIP with external videos
-export const exportToZip = async (cards, background, videoFiles) => {
+export const exportToZip = async (cards, background, videoFiles, filename = null) => {
   try {
     const zip = new JSZip();
     const timestamp = Date.now();
+    const formattedDate = formatDateForFilename();
 
     // Create presentation data with hybrid storage
     const data = {
@@ -93,7 +112,13 @@ Generated: ${new Date(timestamp).toLocaleString()}
 
     // Generate and download ZIP
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `showcase-${timestamp}.zip`);
+
+    // Use custom filename or generate one with formatted date
+    const finalFilename = filename
+      ? `${filename}.zip`
+      : `showcase-${formattedDate}.zip`;
+
+    saveAs(content, finalFilename);
 
     console.log('✅ Presentation exported successfully!');
   } catch (error) {

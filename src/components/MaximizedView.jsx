@@ -6,6 +6,7 @@ const MaximizedView = () => {
   const maximizedCard = useStore(state => state.maximizedCard);
   const cards = useStore(state => state.cards);
   const setMaximizedCard = useStore(state => state.setMaximizedCard);
+  const cardBackdropOpacity = useStore(state => state.cardBackdropOpacity);
 
   const [scale, setScale] = useState(1);
   const containerRef = useRef(null);
@@ -39,6 +40,7 @@ const MaximizedView = () => {
     <AnimatePresence>
       <motion.div
         className="maximized-view"
+        style={{ backgroundColor: `rgba(0, 0, 0, ${cardBackdropOpacity})` }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

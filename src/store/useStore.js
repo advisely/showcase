@@ -31,9 +31,12 @@ const useStore = create((set, get) => ({
   pendingFiles: [],
   isModalOpen: false,
   maximizedCard: null,
+  cardBackdropOpacity: 0.9, // Opacity of backdrop when card is maximized (0-1)
+  backgroundMenuOpen: false,
   isSaving: false,
   lastSaved: null,
   storageError: null,
+  projectName: 'Untitled Presentation', // Default project name
 
   // Actions
   addCard: (cardData) => {
@@ -50,6 +53,14 @@ const useStore = create((set, get) => ({
     });
 
     return newCard;
+  },
+
+  // Reserve multiple card IDs upfront for batch operations
+  reserveCardIds: (count) => {
+    const state = get();
+    const startId = state.currentCardId;
+    set({ currentCardId: state.currentCardId + count });
+    return Array.from({ length: count }, (_, i) => `card-${startId + i}`);
   },
 
   updateCard: (cardId, updates) => set((state) => ({
@@ -108,6 +119,12 @@ const useStore = create((set, get) => ({
     newVideoFiles.set(cardId, file);
     return { videoFiles: newVideoFiles };
   }),
+
+  setProjectName: (name) => set({ projectName: name }),
+
+  setCardBackdropOpacity: (opacity) => set({ cardBackdropOpacity: opacity }),
+
+  setBackgroundMenuOpen: (isOpen) => set({ backgroundMenuOpen: isOpen }),
 
   // Layout algorithms
   arrangeInCircle: () => set((state) => {
