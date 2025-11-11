@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import throttle from 'lodash.throttle';
 import useStore from '../store/useStore';
@@ -147,27 +147,33 @@ const Playfield = () => {
     };
   }, [isPanning, panStart.x, panStart.y, setPan, saveToStorage]);
 
-  // Calculate background based on mode (use specific properties to avoid React conflicts)
-  const getBackgroundStyles = () => {
+  // Use CSS custom properties for background to fix initial render timing issues
+  const containerRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+
     if (background.mode === 'gradient') {
-      return {
-        backgroundImage: `linear-gradient(${background.gradientAngle || 135}deg, ${background.color || '#2c3e50'}, ${background.gradientColor || '#34495e'})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      };
+      container.style.setProperty('--bg-image', `linear-gradient(${background.gradientAngle || 135}deg, ${background.color || '#2c3e50'}, ${background.gradientColor || '#34495e'})`);
+      container.style.setProperty('--bg-size', 'cover');
+      container.style.setProperty('--bg-position', 'top center');
+      container.style.setProperty('--bg-color', 'transparent');
+      container.style.setProperty('--bg-repeat', 'no-repeat');
     } else if (background.mode === 'image' && background.image) {
-      return {
-        backgroundImage: `url(${background.image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      };
+      container.style.setProperty('--bg-image', `url(${background.image})`);
+      container.style.setProperty('--bg-size', 'cover');
+      container.style.setProperty('--bg-position', 'top center');
+      container.style.setProperty('--bg-color', 'transparent');
+      container.style.setProperty('--bg-repeat', 'no-repeat');
     } else {
-      return {
-        backgroundColor: background.color || '#2c3e50'
-      };
+      container.style.setProperty('--bg-image', 'none');
+      container.style.setProperty('--bg-size', 'auto');
+      container.style.setProperty('--bg-position', 'center');
+      container.style.setProperty('--bg-color', background.color || '#2c3e50');
+      container.style.setProperty('--bg-repeat', 'no-repeat');
     }
-  };
+  }, [background]);
 
   const playfieldStyle = {
     transform: `translate(${panX}px, ${panY}px) scale(${zoomLevel})`,
@@ -192,25 +198,15 @@ const Playfield = () => {
       onDragStart={(e) => e.preventDefault()}
     >
       <LayoutGuides />
-      {cards.map(card => (
-        <Card key={card.id} card={card} />
+      {cards.map((card, index) => (
+        <Card key={card.id} card={card} zIndex={index + 1} />
       ))}
     </div>
   );
 
-  // Apply background to the main container
-  const containerStyle = {
-    ...getBackgroundStyles(),
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'visible'
-  };
-
+  // Background is now handled via CSS custom properties
   return (
-    <div className="playfield-container" style={containerStyle}>
+    <div ref={containerRef} className="playfield-container">
       {/* Overlay for image backgrounds - above background, below everything else */}
       {background.mode === 'image' && background.image && (
         <div

@@ -35,6 +35,7 @@ const Toolbar = () => {
   const videoFiles = useStore(state => state.videoFiles);
   const isSaving = useStore(state => state.isSaving);
   const lastSaved = useStore(state => state.lastSaved);
+  const lastSavedFileName = useStore(state => state.lastSavedFileName);
   const storageError = useStore(state => state.storageError);
   const projectName = useStore(state => state.projectName);
   const setProjectName = useStore(state => state.setProjectName);
@@ -94,6 +95,8 @@ const Toolbar = () => {
 
   const handleQuickSave = () => {
     // Save with default timestamp-based name
+    const fileName = `showcase_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`;
+    saveToStorage(fileName);
     exportToJSON(cards, background, null);
   };
 
@@ -109,7 +112,7 @@ const Toolbar = () => {
 
   const handleSaveConfirm = (name) => {
     setProjectName(name);
-    saveToStorage();
+    saveToStorage(name);
 
     if (saveDialogMode === 'json') {
       exportToJSON(cards, background, name);
@@ -152,8 +155,13 @@ const Toolbar = () => {
           <span className="saving-indicator">💾 Saving...</span>
         )}
         {lastSaved && !isSaving && (
-          <span className="last-saved">
-            ✓ Saved {new Date(lastSaved).toLocaleTimeString()}
+          <span className="last-saved" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span>✓ Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+            {lastSavedFileName && (
+              <span style={{ fontSize: '10px', color: '#888' }}>
+                {lastSavedFileName}
+              </span>
+            )}
           </span>
         )}
       </div>

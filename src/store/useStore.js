@@ -35,6 +35,7 @@ const useStore = create((set, get) => ({
   backgroundMenuOpen: false,
   isSaving: false,
   lastSaved: null,
+  lastSavedFileName: null, // Track the name of the last saved file
   storageError: null,
   projectName: 'Untitled Presentation', // Default project name
 
@@ -248,7 +249,7 @@ const useStore = create((set, get) => ({
   }),
 
   // Save/Load functionality
-  saveToStorage: debounce(async () => {
+  saveToStorage: debounce(async (customFileName = null) => {
     const state = get();
 
     set({ isSaving: true, storageError: null });
@@ -274,6 +275,7 @@ const useStore = create((set, get) => ({
       set({
         isSaving: false,
         lastSaved: Date.now(),
+        lastSavedFileName: customFileName || 'Auto Save',
         storageError: null
       });
     } catch (error) {
@@ -320,6 +322,8 @@ const useStore = create((set, get) => ({
     panX: 0,
     panY: 0,
     maximizedCard: null,
+    lastSaved: null,
+    lastSavedFileName: null,
     storageError: null
   })
 }));

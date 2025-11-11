@@ -4,7 +4,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import useStore from '../store/useStore';
 
-const Card = ({ card }) => {
+const Card = ({ card, zIndex = 1 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [size, setSize] = useState(card.size || {
     width: card.orientation === 'landscape' ? 300 : 200,
@@ -38,7 +38,7 @@ const Card = ({ card }) => {
     width: size.width + 'px',
     height: size.height + 'px',
     cursor: interactionMode === 'hand' ? 'grab' : (isDragging ? 'grabbing' : 'move'),
-    zIndex: isDragging ? 1000 : 1,
+    zIndex: isDragging ? 1000 : zIndex,
     transition: isDragging ? 'none' : 'left 0.2s, top 0.2s',
     pointerEvents: interactionMode === 'hand' ? 'none' : 'auto'
   };
