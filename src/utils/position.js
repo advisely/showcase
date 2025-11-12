@@ -4,8 +4,9 @@
 
 /**
  * Check if two rectangles overlap
+ * Increased buffer from 10px to 30px for better visual spacing
  */
-export const rectanglesOverlap = (rect1, rect2, buffer = 10) => {
+export const rectanglesOverlap = (rect1, rect2, buffer = 30) => {
   return !(
     rect1.x + rect1.width + buffer < rect2.x ||
     rect2.x + rect2.width + buffer < rect1.x ||
@@ -16,8 +17,9 @@ export const rectanglesOverlap = (rect1, rect2, buffer = 10) => {
 
 /**
  * Check if a position overlaps with any existing cards
+ * Increased buffer from 10px to 30px for better visual spacing
  */
-export const isPositionOccupied = (position, size, cards, buffer = 10) => {
+export const isPositionOccupied = (position, size, cards, buffer = 30) => {
   const newRect = {
     x: position.x,
     y: position.y,

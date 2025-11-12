@@ -30,17 +30,18 @@ const TextField = ({ textField, zIndex }) => {
   const handleClick = (e) => {
     e.stopPropagation();
     if (interactionMode === 'cursor' && !isEditing && !isDragging) {
-      // Open expression menu to edit properties
-      setEditingTextField(textField);
-      // Trigger opening the expression menu (will be handled by the parent)
-      window.dispatchEvent(new CustomEvent('openExpressionMenu'));
+      // Single click: Edit text content
+      setIsEditing(true);
     }
   };
 
   const handleDoubleClick = (e) => {
     e.stopPropagation();
     if (interactionMode === 'cursor') {
-      setIsEditing(true);
+      // Double click: Open style properties menu
+      setEditingTextField(textField);
+      // Trigger opening the expression menu (will be handled by the parent)
+      window.dispatchEvent(new CustomEvent('openExpressionMenu'));
     }
   };
 

@@ -14,6 +14,7 @@ const OrientationModal = () => {
   const reserveCardIds = useStore(state => state.reserveCardIds);
   const setVideoFile = useStore(state => state.setVideoFile);
   const saveToStorage = useStore(state => state.saveToStorage);
+  const setNotification = useStore(state => state.setNotification);
 
   const handleOrientationSelect = (orientation) => {
     if (pendingFiles.length === 0) {
@@ -24,10 +25,36 @@ const OrientationModal = () => {
     // Reserve card IDs upfront to prevent duplicate IDs when processing multiple files
     const reservedIds = reserveCardIds(pendingFiles.length);
 
-    // Calculate card dimensions based on orientation
-    const cardWidth = orientation === 'landscape' ? 300 : 200;
-    const cardHeight = orientation === 'landscape' ? 200 : 300;
+    // Calculate base card dimensions based on orientation
+    const baseWidth = orientation === 'landscape' ? 300 : 200;
+    const baseHeight = orientation === 'landscape' ? 200 : 300;
+
+    // DENSITY-BASED AUTO-SHRINKING
+    // Calculate total cards after adding new ones
+    const totalCards = cards.length + pendingFiles.length;
+
+    // Calculate density-based scale factor
+    // Formula: Gradually shrink as more cards are added
+    // - 0-10 cards: 100% size
+    // - 10-20 cards: 100% → 80% size
+    // - 20-40 cards: 80% → 60% size
+    // - 40+ cards: 60% → 50% size (minimum)
+    let densityScale = 1.0;
+    if (totalCards > 10) {
+      densityScale = Math.max(0.5, 1.0 - (totalCards - 10) * 0.01);
+    }
+
+    // Apply density scaling to card size
+    const cardWidth = Math.round(baseWidth * densityScale);
+    const cardHeight = Math.round(baseHeight * densityScale);
     const cardSize = { width: cardWidth, height: cardHeight };
+
+    console.log('[OrientationModal] Density-based sizing:', {
+      totalCards,
+      densityScale: `${Math.round(densityScale * 100)}%`,
+      originalSize: `${baseWidth}×${baseHeight}`,
+      scaledSize: `${cardWidth}×${cardHeight}`
+    });
 
     // Calculate viewport center in canvas coordinates (accounting for pan and zoom)
     const viewportWidth = window.innerWidth;
@@ -102,6 +129,14 @@ const OrientationModal = () => {
         processedCount++;
         if (processedCount === pendingFiles.length) {
           saveToStorage();
+
+          // Show notification if density shrinking was applied
+          if (densityScale < 1.0) {
+            setNotification({
+              message: `${totalCards} cards: Auto-sized to ${Math.round(densityScale * 100)}% to prevent overlap. Use zoom to see details.`,
+              type: 'info'
+            });
+          }
         }
       };
 

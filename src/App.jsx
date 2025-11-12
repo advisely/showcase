@@ -7,6 +7,7 @@ import MaximizedView from './components/MaximizedView';
 import Minimap from './components/Minimap';
 import LayoutCustomizationMenu from './components/LayoutCustomizationMenu';
 import BackgroundMenu from './components/BackgroundMenu';
+import Toast from './components/Toast';
 import useStore from './store/useStore';
 import { migrateFromLocalStorage } from './utils/storage';
 import './App.css';
@@ -40,6 +41,7 @@ function App() {
       <Minimap />
       <LayoutCustomizationMenu />
       <BackgroundMenu />
+      <Toast />
     </div>
   );
 }

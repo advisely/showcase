@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.1.1] - 2024-11-12
+
+### 🎯 UX Improvements
+
+- **Enhanced Text Editing Flow** - Improved text field interaction to match industry standards
+  - Single-click now edits text content directly (type immediately, no extra steps)
+  - Double-click opens properties menu for font, size, and color changes
+  - Follows PowerPoint/Google Slides UX pattern for familiarity
+  - No more need to delete and re-create text to edit content
+
+### 🐛 Bug Fixes
+
+- **Fixed Snake Layout Guide** - Updated wave frequency from 0.01 to 0.5
+  - Snake guide now displays proper wavy S-curve pattern instead of straight line
+  - Completes one full wave every 2 cards for clear visual pattern
+  - Guide path perfectly matches actual card positions
+
+### 📚 Documentation
+
+- Updated all documentation files to reflect new text editing behavior
+  - [README.md](README.md) - Updated text editing instructions
+  - [QUICKSTART.md](QUICKSTART.md) - Updated quick start guide
+  - [CLAUDE.md](CLAUDE.md) - Updated component patterns section
+  - [PLAN.md](PLAN.md) - Updated completed features list
+
+---
+
 ## [2.0.0] - 2024-11-10
 
 ### 🎉 Major Rewrite

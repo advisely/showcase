@@ -73,8 +73,8 @@ Create beautiful text overlays with full typography control:
 3. Click **"Add Text Field"** to place it on the canvas
 
 **To Edit Existing Text:**
-- **Single-click** any text field → Opens properties menu for font/size/color changes
-- **Double-click** text field → Edit the text content directly
+- **Single-click** any text field → Edit the text content directly (type immediately)
+- **Double-click** text field → Opens properties menu for font/size/color changes
 - **Drag** to reposition (smooth, snappy movement like cards)
 - **Delete** using the ❌ button (appears on hover)
 

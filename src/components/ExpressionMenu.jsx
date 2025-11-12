@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import useStore from '../store/useStore';
 
@@ -25,14 +25,28 @@ const COLOR_PRESETS = [
 ];
 
 const ExpressionMenu = ({ isOpen, buttonRef, onClose, editingTextField = null }) => {
-  const [selectedFont, setSelectedFont] = useState(
-    editingTextField ? FONT_OPTIONS.find(f => f.value === editingTextField.font) || FONT_OPTIONS[0] : FONT_OPTIONS[0]
-  );
-  const [selectedSize, setSelectedSize] = useState(editingTextField?.fontSize || 32);
-  const [textColor, setTextColor] = useState(editingTextField?.color || '#ffffff');
+  const [selectedFont, setSelectedFont] = useState(FONT_OPTIONS[0]);
+  const [selectedSize, setSelectedSize] = useState(32);
+  const [textColor, setTextColor] = useState('#ffffff');
   const addTextField = useStore(state => state.addTextField);
   const updateTextField = useStore(state => state.updateTextField);
   const saveToStorage = useStore(state => state.saveToStorage);
+
+  // Update state when editingTextField changes
+  useEffect(() => {
+    if (editingTextField) {
+      // Load the text field's current properties
+      const font = FONT_OPTIONS.find(f => f.value === editingTextField.font) || FONT_OPTIONS[0];
+      setSelectedFont(font);
+      setSelectedSize(editingTextField.fontSize || 32);
+      setTextColor(editingTextField.color || '#ffffff');
+    } else {
+      // Reset to defaults for new text field
+      setSelectedFont(FONT_OPTIONS[0]);
+      setSelectedSize(32);
+      setTextColor('#ffffff');
+    }
+  }, [editingTextField, isOpen]);
 
   if (!isOpen) return null;
 

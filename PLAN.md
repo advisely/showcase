@@ -30,8 +30,8 @@ Transform Showcase into the ultimate **visual storytelling platform** - not slid
 - [x] **10+ Font Families** - With live preview
 - [x] **16 Size Presets** - 12px to 128px
 - [x] **20 Color Presets** - Quick-pick palette
-- [x] **Click-to-Edit** - Properties menu on single-click
-- [x] **Inline Editing** - Double-click for text content
+- [x] **Inline Editing** - Single-click to edit text content
+- [x] **Properties Menu** - Double-click for font/size/color changes
 
 ### UX Improvements
 - [x] **Minimap** - Canvas overview with navigation

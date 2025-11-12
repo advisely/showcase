@@ -104,8 +104,8 @@ showcase/
 - Zoom-compensated positioning
 
 **TextField Component** (Text)
-- Single-click → Edit properties (font, size, color)
-- Double-click → Edit text content
+- Single-click → Edit text content directly (cursor appears, type immediately)
+- Double-click → Edit properties (font, size, color)
 - Draggable with smooth snappy feel
 - 20 color presets + custom picker
 - 10+ font families with live preview

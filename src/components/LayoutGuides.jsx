@@ -102,19 +102,30 @@ const LayoutGuides = () => {
   };
 
   const renderLineGuide = () => {
-    const padding = 100;
-    const y = 400;
-    const startX = padding;
-    const endX = 1600 - padding;
+    // DYNAMIC: Calculate bounds from actual card positions
+    const margin = 100;
+
+    // Find min/max X and average Y from cards
+    const minX = Math.min(...cards.map(c => c.position?.x || 0));
+    const maxX = Math.max(...cards.map(c => (c.position?.x || 0) + (c.size?.width || 300)));
+    const avgY = cards.reduce((sum, c) => sum + ((c.position?.y || 0) + ((c.size?.height || 200) / 2)), 0) / cards.length;
+
+    const startX = minX - margin;
+    const endX = maxX + margin;
+    const y = avgY;
+
+    // Dynamically size SVG to cover all cards
+    const svgWidth = endX - startX + margin * 2;
+    const svgHeight = 1000; // Keep height fixed for vertical range
 
     return (
       <svg
         style={{
           position: 'absolute',
           top: 0,
-          left: 0,
-          width: '2000px',
-          height: '1000px',
+          left: startX - margin,
+          width: `${svgWidth}px`,
+          height: `${svgHeight}px`,
           pointerEvents: 'auto',
           zIndex: 1,
           overflow: 'visible',
@@ -123,9 +134,9 @@ const LayoutGuides = () => {
         onClick={handleGuideClick}
       >
         <motion.line
-          x1={startX}
+          x1={margin}
           y1={y}
-          x2={endX}
+          x2={svgWidth - margin}
           y2={y}
           stroke={guideColor}
           strokeWidth={strokeWidth}
@@ -137,7 +148,7 @@ const LayoutGuides = () => {
         />
         {/* Start marker - circle */}
         <motion.circle
-          cx={startX}
+          cx={margin}
           cy={y}
           r={8}
           fill={guideColor}
@@ -154,18 +165,18 @@ const LayoutGuides = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <line
-            x1={endX - 10}
+            x1={svgWidth - margin - 10}
             y1={y - 10}
-            x2={endX + 10}
+            x2={svgWidth - margin + 10}
             y2={y + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
           <line
-            x1={endX + 10}
+            x1={svgWidth - margin + 10}
             y1={y - 10}
-            x2={endX - 10}
+            x2={svgWidth - margin - 10}
             y2={y + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
@@ -177,35 +188,47 @@ const LayoutGuides = () => {
   };
 
   const renderCurveGuide = () => {
-    const width = 1600;
-    const height = 800;
-    const padding = 100;
-    const points = [];
+    // DYNAMIC: Calculate bounds from actual card positions
+    const margin = 100;
+    const amplitude = 200; // Must match store's arrangeInCurve amplitude
 
-    // Generate curve points
+    // Find min/max X and average Y from cards
+    const minX = Math.min(...cards.map(c => c.position?.x || 0));
+    const maxX = Math.max(...cards.map(c => (c.position?.x || 0) + (c.size?.width || 300)));
+    const avgY = cards.reduce((sum, c) => sum + ((c.position?.y || 0) + ((c.size?.height || 200) / 2)), 0) / cards.length;
+
+    const startX = minX - margin;
+    const endX = maxX + margin;
+    const totalWidth = endX - startX;
+
+    // Generate curve points dynamically across actual card span
+    const points = [];
     for (let i = 0; i <= 100; i++) {
       const t = i / 100;
-      const x = padding + (width - 2 * padding) * t;
-      const y = height / 2 + Math.sin(t * Math.PI) * (height / 3);
+      const x = margin + totalWidth * t;
+      const y = avgY + Math.sin(t * Math.PI * 2) * amplitude;
       points.push(`${x},${y}`);
     }
 
     const pathD = `M ${points.join(' L ')}`;
 
-    // Start and end points
-    const startX = padding;
-    const startY = height / 2;
-    const endX = padding + (width - 2 * padding);
-    const endY = height / 2;
+    // Start and end markers
+    const startMarkerX = margin;
+    const startMarkerY = avgY;
+    const endMarkerX = margin + totalWidth;
+    const endMarkerY = avgY;
+
+    const svgWidth = totalWidth + margin * 2;
+    const svgHeight = 1000;
 
     return (
       <svg
         style={{
           position: 'absolute',
           top: 0,
-          left: 0,
-          width: '2000px',
-          height: '1000px',
+          left: startX - margin,
+          width: `${svgWidth}px`,
+          height: `${svgHeight}px`,
           pointerEvents: 'auto',
           zIndex: 1,
           overflow: 'visible',
@@ -227,8 +250,8 @@ const LayoutGuides = () => {
         />
         {/* Start marker - circle */}
         <motion.circle
-          cx={startX}
-          cy={startY}
+          cx={startMarkerX}
+          cy={startMarkerY}
           r={8}
           fill={guideColor}
           initial={{ scale: 0, opacity: 0 }}
@@ -244,19 +267,19 @@ const LayoutGuides = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <line
-            x1={endX - 10}
-            y1={endY - 10}
-            x2={endX + 10}
-            y2={endY + 10}
+            x1={endMarkerX - 10}
+            y1={endMarkerY - 10}
+            x2={endMarkerX + 10}
+            y2={endMarkerY + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
           <line
-            x1={endX + 10}
-            y1={endY - 10}
-            x2={endX - 10}
-            y2={endY + 10}
+            x1={endMarkerX + 10}
+            y1={endMarkerY - 10}
+            x2={endMarkerX - 10}
+            y2={endMarkerY + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
@@ -328,37 +351,53 @@ const LayoutGuides = () => {
   };
 
   const renderSnakeGuide = () => {
-    const width = 1600;
-    const height = 800;
-    const padding = 100;
-    const amplitude = 120;
-    const frequency = 3;
+    // DYNAMIC: Calculate bounds from actual card positions
+    const margin = 100;
+    const amplitude = 150; // Must match store's arrangeInSnake amplitude
+    const frequency = 0.5; // Must match store's snake frequency (0.5 = 2 cards per wave)
+
+    // Find min/max X and average Y from cards
+    const minX = Math.min(...cards.map(c => c.position?.x || 0));
+    const maxX = Math.max(...cards.map(c => (c.position?.x || 0) + (c.size?.width || 300)));
+    const avgY = cards.reduce((sum, c) => sum + ((c.position?.y || 0) + ((c.size?.height || 200) / 2)), 0) / cards.length;
+
+    const startX = minX - margin;
+    const endX = maxX + margin;
+    const totalWidth = endX - startX;
+
+    // Calculate number of points based on actual width (denser for longer paths)
+    const numPoints = Math.max(100, Math.floor(totalWidth / 10));
     const points = [];
 
-    // Generate snake pattern points
-    for (let i = 0; i <= 100; i++) {
-      const t = i / 100;
-      const x = padding + (width - 2 * padding) * t;
-      const y = height / 2 + amplitude * Math.sin(t * Math.PI * frequency);
+    // Generate snake pattern points - continuous wave based on position
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints;
+      const x = margin + totalWidth * t;
+      // Match the store's snake formula: index-based sine wave
+      const cardIndex = (i / numPoints) * cards.length;
+      const y = avgY + amplitude * Math.sin(cardIndex * frequency * Math.PI * 2);
       points.push(`${x},${y}`);
     }
 
     const pathD = `M ${points.join(' L ')}`;
 
-    // Start and end points
-    const startX = padding;
-    const startY = height / 2;
-    const endX = padding + (width - 2 * padding);
-    const endY = height / 2 + amplitude * Math.sin(Math.PI * frequency);
+    // Start and end markers
+    const startMarkerX = margin;
+    const startMarkerY = avgY;
+    const endMarkerX = margin + totalWidth;
+    const endMarkerY = avgY + amplitude * Math.sin((cards.length - 1) * frequency * Math.PI * 2);
+
+    const svgWidth = totalWidth + margin * 2;
+    const svgHeight = 1000;
 
     return (
       <svg
         style={{
           position: 'absolute',
           top: 0,
-          left: 0,
-          width: '2000px',
-          height: '1000px',
+          left: startX - margin,
+          width: `${svgWidth}px`,
+          height: `${svgHeight}px`,
           pointerEvents: 'auto',
           zIndex: 1,
           overflow: 'visible',
@@ -380,8 +419,8 @@ const LayoutGuides = () => {
         />
         {/* Start marker - circle */}
         <motion.circle
-          cx={startX}
-          cy={startY}
+          cx={startMarkerX}
+          cy={startMarkerY}
           r={8}
           fill={guideColor}
           initial={{ scale: 0, opacity: 0 }}
@@ -397,19 +436,19 @@ const LayoutGuides = () => {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <line
-            x1={endX - 10}
-            y1={endY - 10}
-            x2={endX + 10}
-            y2={endY + 10}
+            x1={endMarkerX - 10}
+            y1={endMarkerY - 10}
+            x2={endMarkerX + 10}
+            y2={endMarkerY + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
           <line
-            x1={endX + 10}
-            y1={endY - 10}
-            x2={endX - 10}
-            y2={endY + 10}
+            x1={endMarkerX + 10}
+            y1={endMarkerY - 10}
+            x2={endMarkerX - 10}
+            y2={endMarkerY + 10}
             stroke={guideColor}
             strokeWidth={strokeWidth}
             strokeLinecap="round"

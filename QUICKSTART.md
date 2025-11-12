@@ -32,8 +32,8 @@ That's it! 🎉
 
 ### Text & Typography
 - **Add Text** - Click "✍️ Expression" button to add text
-- **Edit Text** - Double-click text to edit content
-- **Edit Properties** - Single-click text to change font, size, color
+- **Edit Text** - Single-click text to edit content (type immediately)
+- **Edit Properties** - Double-click text to change font, size, color
 - **Font Choices** - 10+ fonts including Sans-serif, Serif, Monospace, Cursive
 - **Size Options** - 16 preset sizes from 12px to 128px
 - **Color Presets** - 20 quick-pick colors + custom color picker
