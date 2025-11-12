@@ -46,6 +46,14 @@ const OrientationModal = () => {
     };
 
     // Calculate non-overlapping positions for all new cards
+    console.log('[OrientationModal] Calculating positions:', {
+      fileCount: pendingFiles.length,
+      basePosition,
+      cardSize,
+      existingCardsCount: cards.length,
+      existingCards: cards.map(c => ({ id: c.id, pos: c.position, size: c.size }))
+    });
+
     const positions = calculatePositionsForMultipleCards(
       pendingFiles.length,
       basePosition,
@@ -53,7 +61,11 @@ const OrientationModal = () => {
       cards
     );
 
-    // Process all pending files
+    console.log('[OrientationModal] Calculated positions:', positions);
+
+    // Process all pending files sequentially to ensure collision detection works
+    let processedCount = 0;
+
     pendingFiles.forEach((file, index) => {
       const isVideo = file.type.startsWith('video/');
       const reader = new FileReader();
@@ -70,6 +82,12 @@ const OrientationModal = () => {
           timestamp: Date.now()
         };
 
+        console.log(`[OrientationModal] Adding card ${index}:`, {
+          id: cardData.id,
+          position: cardData.position,
+          size: cardData.size
+        });
+
         // Add card directly to store without generating a new ID
         useStore.setState((state) => ({
           cards: [...state.cards, cardData]
@@ -80,8 +98,11 @@ const OrientationModal = () => {
           setVideoFile(reservedIds[index], file);
         }
 
-        // Save after each card is added to ensure state is persisted
-        saveToStorage();
+        // Increment counter and save only after all files are processed
+        processedCount++;
+        if (processedCount === pendingFiles.length) {
+          saveToStorage();
+        }
       };
 
       reader.readAsDataURL(file);

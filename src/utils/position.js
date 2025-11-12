@@ -88,20 +88,40 @@ export const findNonOverlappingPosition = (targetPosition, size, cards, maxAttem
  * Calculate smart positions for multiple cards to avoid overlap
  */
 export const calculatePositionsForMultipleCards = (count, basePosition, size, cards) => {
+  console.log('[calculatePositionsForMultipleCards] Called with:', {
+    count,
+    basePosition,
+    size,
+    cardsCount: cards.length
+  });
+
   const positions = [];
   let currentPosition = { ...basePosition };
 
   for (let i = 0; i < count; i++) {
+    // Create a temporary cards array that includes both existing cards and already-calculated positions
+    const tempCards = [
+      ...cards,
+      ...positions.map((pos, idx) => ({
+        position: pos,
+        size,
+        id: `temp-${idx}`
+      }))
+    ];
+
+    console.log(`[calculatePositionsForMultipleCards] Finding position for card ${i}:`, {
+      currentPosition,
+      tempCardsCount: tempCards.length
+    });
+
     // Find non-overlapping position
     const freePosition = findNonOverlappingPosition(
       currentPosition,
       size,
-      [...cards, ...positions.map((pos, idx) => ({
-        position: pos,
-        size,
-        id: `temp-${idx}`
-      }))]
+      tempCards
     );
+
+    console.log(`[calculatePositionsForMultipleCards] Found position for card ${i}:`, freePosition);
 
     positions.push(freePosition);
 
@@ -112,5 +132,6 @@ export const calculatePositionsForMultipleCards = (count, basePosition, size, ca
     };
   }
 
+  console.log('[calculatePositionsForMultipleCards] Final positions:', positions);
   return positions;
 };
