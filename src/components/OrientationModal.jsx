@@ -1,9 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import useStore from '../store/useStore';
+import { calculatePositionsForMultipleCards } from '../utils/position';
 
 const OrientationModal = () => {
   const isModalOpen = useStore(state => state.isModalOpen);
   const pendingFiles = useStore(state => state.pendingFiles);
+  const cards = useStore(state => state.cards);
+  const zoomLevel = useStore(state => state.zoomLevel);
+  const panX = useStore(state => state.panX);
+  const panY = useStore(state => state.panY);
   const setModalOpen = useStore(state => state.setModalOpen);
   const setPendingFiles = useStore(state => state.setPendingFiles);
   const reserveCardIds = useStore(state => state.reserveCardIds);
@@ -19,35 +24,49 @@ const OrientationModal = () => {
     // Reserve card IDs upfront to prevent duplicate IDs when processing multiple files
     const reservedIds = reserveCardIds(pendingFiles.length);
 
+    // Calculate card dimensions based on orientation
+    const cardWidth = orientation === 'landscape' ? 300 : 200;
+    const cardHeight = orientation === 'landscape' ? 200 : 300;
+    const cardSize = { width: cardWidth, height: cardHeight };
+
+    // Calculate viewport center in canvas coordinates (accounting for pan and zoom)
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight - 100; // Account for toolbar
+    const viewportCenterX = viewportWidth / 2;
+    const viewportCenterY = viewportHeight / 2;
+
+    // Convert viewport center to canvas coordinates
+    const canvasCenterX = (viewportCenterX - panX) / zoomLevel;
+    const canvasCenterY = (viewportCenterY - panY) / zoomLevel;
+
+    // Target position (center of canvas view, adjusted for card size)
+    const basePosition = {
+      x: canvasCenterX - cardWidth / 2,
+      y: canvasCenterY - cardHeight / 2
+    };
+
+    // Calculate non-overlapping positions for all new cards
+    const positions = calculatePositionsForMultipleCards(
+      pendingFiles.length,
+      basePosition,
+      cardSize,
+      cards
+    );
+
     // Process all pending files
     pendingFiles.forEach((file, index) => {
       const isVideo = file.type.startsWith('video/');
       const reader = new FileReader();
 
       reader.onload = (e) => {
-        // Center position on screen with offset for multiple files
-        const cardWidth = orientation === 'landscape' ? 300 : 200;
-        const cardHeight = orientation === 'landscape' ? 200 : 300;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight - 100; // Account for toolbar
-
-        // Offset each card slightly so they don't all stack on top of each other
-        const offset = index * 30;
-
         const cardData = {
           id: reservedIds[index], // Use pre-reserved ID
           orientation,
           mediaType: isVideo ? 'video' : 'image',
           mediaSrc: e.target.result,
           videoFilename: isVideo ? file.name : null,
-          position: {
-            x: (viewportWidth / 2) - (cardWidth / 2) + offset,
-            y: (viewportHeight / 2) - (cardHeight / 2) + offset
-          },
-          size: {
-            width: cardWidth,
-            height: cardHeight
-          },
+          position: positions[index], // Use collision-free position
+          size: cardSize,
           timestamp: Date.now()
         };
 
