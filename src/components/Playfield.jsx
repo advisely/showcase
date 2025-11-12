@@ -22,6 +22,7 @@ const Playfield = () => {
   const updateCard = useStore(state => state.updateCard);
   const updateTextField = useStore(state => state.updateTextField);
   const setPan = useStore(state => state.setPan);
+  const setZoom = useStore(state => state.setZoom);
   const saveToStorage = useStore(state => state.saveToStorage);
 
   // Only enable drag sensors in cursor mode
@@ -105,6 +106,28 @@ const Playfield = () => {
       }
     };
   }, []);
+
+  // Handle mouse wheel zoom
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+
+      // Calculate zoom delta (negative deltaY = zoom in, positive = zoom out)
+      const zoomDelta = -e.deltaY * 0.001; // Adjust sensitivity
+      const newZoom = zoomLevel + zoomDelta;
+
+      setZoom(newZoom);
+    };
+
+    const container = containerRef.current;
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [zoomLevel, setZoom]);
 
   // Enhanced event prevention in hand mode - capture phase
   useEffect(() => {

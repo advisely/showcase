@@ -60,6 +60,35 @@ npm run dev
    - **Portrait** (9:16) - Perfect for mobile screenshots
 4. Watch your media appear on the canvas!
 
+### ✍️ Adding Text & Typography
+
+Create beautiful text overlays with full typography control:
+
+**To Add Text:**
+1. Click the **"✍️ Expression"** button in the toolbar
+2. Customize your text properties:
+   - **Font Family** - Choose from 10+ fonts with live preview
+   - **Font Size** - Select from 12px to 128px (16 preset sizes)
+   - **Color** - Pick from 20 preset colors or use custom color picker
+3. Click **"Add Text Field"** to place it on the canvas
+
+**To Edit Existing Text:**
+- **Single-click** any text field → Opens properties menu for font/size/color changes
+- **Double-click** text field → Edit the text content directly
+- **Drag** to reposition (smooth, snappy movement like cards)
+- **Delete** using the ❌ button (appears on hover)
+
+**Font Options:**
+- Sans-serif (default), Serif, Monospace
+- Cursive, Fantasy, Arial, Verdana
+- Helvetica, Times New Roman, Comic Sans
+
+**Color Presets Include:**
+- Basic colors: White, Black, Red, Green, Blue
+- Vibrant colors: Yellow, Magenta, Cyan, Orange, Purple
+- Pastels: Soft pink, Turquoise, Sky blue, Golden yellow, Deep purple
+- Plus custom hex/RGB input for unlimited possibilities!
+
 ### 🎯 Arranging Your Content
 
 #### Manual Positioning
@@ -165,6 +194,7 @@ Your work is **automatically saved** every second to your browser's storage (Ind
 
 **Export includes:**
 - All cards with positions and sizes
+- All text fields with content, fonts, sizes, and colors
 - Background settings (color/gradient/image with opacity and blur)
 - Active layout and guide customizations (color, stroke width)
 - Zoom and pan state
@@ -366,6 +396,10 @@ This shouldn't happen! If it does:
 ## 🗺️ Roadmap
 
 ### Recently Added ✅
+- [x] ✍️ **Text fields with full typography control**
+- [x] 🎨 **20 color presets + custom color picker**
+- [x] 📝 **Click-to-edit text properties**
+- [x] 🔤 **10+ font families with live preview**
 - [x] 🎨 Background opacity control (0-100%)
 - [x] 🌫️ Background blur effect (0-20px)
 - [x] 🗺️ Pirate treasure map markers (● start, ✕ end)
@@ -375,7 +409,7 @@ This shouldn't happen! If it does:
 
 ### Coming Soon
 - [ ] 🔄 Undo/Redo functionality
-- [ ] 📝 Text cards with rich formatting
+- [ ] 🎨 Text background/border options
 - [ ] ✏️ Drawing tools & annotations
 - [ ] 🎭 Presentation mode with transitions
 - [ ] ⌨️ Full keyboard shortcut support

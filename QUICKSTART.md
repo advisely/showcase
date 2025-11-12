@@ -18,16 +18,25 @@ That's it! 🎉
 
 1. **Add Media** - Click "📎 Add Media" button
 2. **Choose Orientation** - Select Landscape or Portrait
-3. **Drag Cards** - Move them around freely
-4. **Try Layouts** - Click Circle, Curve, Grid, or Line buttons
-5. **Customize** - Change background color or add background image
+3. **Add Text** - Click "✍️ Expression" to add styled text
+4. **Drag Elements** - Move cards and text around freely
+5. **Try Layouts** - Click Circle, Curve, Grid, or Line buttons
+6. **Customize** - Change background color or add background image
 
 ## Key Features
 
 ### Drag & Drop
-- **Drag to move** - Click and drag any card
-- **Resize** - Drag the bottom-right corner
-- **Click to view** - Click once to maximize
+- **Drag to move** - Click and drag any card or text field
+- **Resize** - Drag the bottom-right corner of cards
+- **Click to view** - Click once to maximize cards
+
+### Text & Typography
+- **Add Text** - Click "✍️ Expression" button to add text
+- **Edit Text** - Double-click text to edit content
+- **Edit Properties** - Single-click text to change font, size, color
+- **Font Choices** - 10+ fonts including Sans-serif, Serif, Monospace, Cursive
+- **Size Options** - 16 preset sizes from 12px to 128px
+- **Color Presets** - 20 quick-pick colors + custom color picker
 
 ### Zoom & Pan
 - **Zoom In/Out** - Use buttons on the left sidebar
