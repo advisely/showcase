@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import useStore from '../store/useStore';
 import { exportToJSON, exportToZip, importFromFile } from '../utils/export';
@@ -6,6 +6,7 @@ import SaveDialog from './SaveDialog';
 import SaveMenu from './SaveMenu';
 import SettingsMenu from './SettingsMenu';
 import CardSettings from './CardSettings';
+import ExpressionMenu from './ExpressionMenu';
 
 const Toolbar = () => {
   const fileInputRef = useRef(null);
@@ -14,14 +15,20 @@ const Toolbar = () => {
   const bgImageInputRef = useRef(null);
   const saveButtonRef = useRef(null);
   const settingsButtonRef = useRef(null);
+  const elementsButtonRef = useRef(null);
+  const expressionButtonRef = useRef(null);
 
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveDialogMode, setSaveDialogMode] = useState('json'); // 'json' or 'zip'
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [isCardSettingsOpen, setIsCardSettingsOpen] = useState(false);
+  const [isElementsMenuOpen, setIsElementsMenuOpen] = useState(false);
+  const [isExpressionMenuOpen, setIsExpressionMenuOpen] = useState(false);
 
   const setModalOpen = useStore(state => state.setModalOpen);
+  const editingTextField = useStore(state => state.editingTextField);
+  const setEditingTextField = useStore(state => state.setEditingTextField);
   const setPendingFiles = useStore(state => state.setPendingFiles);
   const setBackground = useStore(state => state.setBackground);
   const background = useStore(state => state.background);
@@ -134,6 +141,19 @@ const Toolbar = () => {
     setIsCardSettingsOpen(true);
   };
 
+  // Listen for custom event to open expression menu
+  useEffect(() => {
+    const handleOpenExpressionMenu = () => {
+      setIsExpressionMenuOpen(true);
+    };
+
+    window.addEventListener('openExpressionMenu', handleOpenExpressionMenu);
+
+    return () => {
+      window.removeEventListener('openExpressionMenu', handleOpenExpressionMenu);
+    };
+  }, []);
+
   return (
     <motion.header
       className="toolbar"
@@ -184,52 +204,113 @@ const Toolbar = () => {
           onChange={handleFileSelection}
         />
 
-        <div className="btn-group">
+        <div style={{ position: 'relative' }}>
           <motion.button
+            ref={elementsButtonRef}
             className="btn btn-secondary"
-            onClick={() => handleLayout(arrangeInCircle)}
-            title="Arrange in Circle"
+            onClick={() => setIsElementsMenuOpen(!isElementsMenuOpen)}
+            title="Arrange Elements"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <span>⭕</span> Circle
+            <span>✨</span> Elements
           </motion.button>
+
+          {isElementsMenuOpen && (
+            <motion.div
+              className="elements-submenu"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="btn-group">
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleLayout(arrangeInCircle);
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Arrange in Circle"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>⭕</span> Circle
+                </motion.button>
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleLayout(arrangeInCurve);
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Arrange in Curve"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>〰️</span> Curve
+                </motion.button>
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleLayout(arrangeInGrid);
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Arrange in Grid"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>▦</span> Grid
+                </motion.button>
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleLayout(arrangeInLine);
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Arrange in Line"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>━</span> Line
+                </motion.button>
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleLayout(arrangeInSnake);
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Arrange in Snake"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>〰</span> Snake
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        <div style={{ position: 'relative' }}>
           <motion.button
+            ref={expressionButtonRef}
             className="btn btn-secondary"
-            onClick={() => handleLayout(arrangeInCurve)}
-            title="Arrange in Curve"
+            onClick={() => setIsExpressionMenuOpen(!isExpressionMenuOpen)}
+            title="Add Text"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <span>〰️</span> Curve
+            <span>✍️</span> Expression
           </motion.button>
-          <motion.button
-            className="btn btn-secondary"
-            onClick={() => handleLayout(arrangeInGrid)}
-            title="Arrange in Grid"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span>▦</span> Grid
-          </motion.button>
-          <motion.button
-            className="btn btn-secondary"
-            onClick={() => handleLayout(arrangeInLine)}
-            title="Arrange in Line"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span>━</span> Line
-          </motion.button>
-          <motion.button
-            className="btn btn-secondary"
-            onClick={() => handleLayout(arrangeInSnake)}
-            title="Arrange in Snake"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span>〰</span> Snake
-          </motion.button>
+
+          <ExpressionMenu
+            isOpen={isExpressionMenuOpen}
+            buttonRef={expressionButtonRef}
+            onClose={() => {
+              setIsExpressionMenuOpen(false);
+              setEditingTextField(null);
+            }}
+            editingTextField={editingTextField}
+          />
         </div>
       </div>
 

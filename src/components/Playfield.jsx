@@ -5,6 +5,7 @@ import useStore from '../store/useStore';
 import Card from './Card';
 import SimpleCard from './SimpleCard';
 import LayoutGuides from './LayoutGuides';
+import TextField from './TextField';
 
 const Playfield = () => {
   const playfieldRef = useRef(null);
@@ -12,12 +13,14 @@ const Playfield = () => {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const cards = useStore(state => state.cards);
+  const textFields = useStore(state => state.textFields);
   const background = useStore(state => state.background);
   const zoomLevel = useStore(state => state.zoomLevel);
   const panX = useStore(state => state.panX);
   const panY = useStore(state => state.panY);
   const interactionMode = useStore(state => state.interactionMode);
   const updateCard = useStore(state => state.updateCard);
+  const updateTextField = useStore(state => state.updateTextField);
   const setPan = useStore(state => state.setPan);
   const saveToStorage = useStore(state => state.saveToStorage);
 
@@ -32,12 +35,13 @@ const Playfield = () => {
 
   const isDndEnabled = interactionMode === 'cursor';
 
-  // Handle card drag
+  // Handle card and text field drag
   const handleDragEnd = (event) => {
     const { active, delta } = event;
 
     if (delta.x !== 0 || delta.y !== 0) {
       const card = cards.find(c => c.id === active.id);
+      const textField = textFields.find(t => t.id === active.id);
 
       if (card) {
         // Compensate for zoom level when saving final position
@@ -45,6 +49,16 @@ const Playfield = () => {
         const newY = (card.position?.y || 0) + (delta.y / zoomLevel);
 
         updateCard(card.id, {
+          position: { x: newX, y: newY }
+        });
+
+        saveToStorage();
+      } else if (textField) {
+        // Compensate for zoom level when saving final position
+        const newX = (textField.position?.x || 0) + (delta.x / zoomLevel);
+        const newY = (textField.position?.y || 0) + (delta.y / zoomLevel);
+
+        updateTextField(textField.id, {
           position: { x: newX, y: newY }
         });
 
@@ -156,15 +170,15 @@ const Playfield = () => {
 
     if (background.mode === 'gradient') {
       container.style.setProperty('--bg-image', `linear-gradient(${background.gradientAngle || 135}deg, ${background.color || '#2c3e50'}, ${background.gradientColor || '#34495e'})`);
-      container.style.setProperty('--bg-size', 'cover');
-      container.style.setProperty('--bg-position', 'top center');
+      container.style.setProperty('--bg-size', '100% 100%');
+      container.style.setProperty('--bg-position', 'center');
       container.style.setProperty('--bg-color', 'transparent');
       container.style.setProperty('--bg-repeat', 'no-repeat');
     } else if (background.mode === 'image' && background.image) {
       container.style.setProperty('--bg-image', `url(${background.image})`);
-      container.style.setProperty('--bg-size', 'cover');
-      container.style.setProperty('--bg-position', 'top center');
-      container.style.setProperty('--bg-color', 'transparent');
+      container.style.setProperty('--bg-size', '100% 100%');
+      container.style.setProperty('--bg-position', 'center');
+      container.style.setProperty('--bg-color', background.color || '#2c3e50');
       container.style.setProperty('--bg-repeat', 'no-repeat');
     } else {
       container.style.setProperty('--bg-image', 'none');
@@ -200,6 +214,9 @@ const Playfield = () => {
       <LayoutGuides />
       {cards.map((card, index) => (
         <Card key={card.id} card={card} zIndex={index + 1} />
+      ))}
+      {textFields.map((textField, index) => (
+        <TextField key={textField.id} textField={textField} zIndex={cards.length + index + 1} />
       ))}
     </div>
   );

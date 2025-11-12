@@ -5,7 +5,10 @@ import { savePresentation, loadPresentation } from '../utils/storage';
 const useStore = create((set, get) => ({
   // State
   cards: [],
+  textFields: [],
   currentCardId: 0,
+  currentTextFieldId: 0,
+  editingTextField: null,
   videoFiles: new Map(),
   background: {
     color: '#2c3e50',
@@ -80,6 +83,34 @@ const useStore = create((set, get) => ({
       videoFiles: newVideoFiles
     };
   }),
+
+  addTextField: (textData) => {
+    const state = get();
+    const newTextField = {
+      id: `text-${state.currentTextFieldId}`,
+      ...textData,
+      timestamp: Date.now()
+    };
+
+    set({
+      textFields: [...state.textFields, newTextField],
+      currentTextFieldId: state.currentTextFieldId + 1
+    });
+
+    return newTextField;
+  },
+
+  updateTextField: (textFieldId, updates) => set((state) => ({
+    textFields: state.textFields.map(textField =>
+      textField.id === textFieldId ? { ...textField, ...updates } : textField
+    )
+  })),
+
+  deleteTextField: (textFieldId) => set((state) => ({
+    textFields: state.textFields.filter(textField => textField.id !== textFieldId)
+  })),
+
+  setEditingTextField: (textField) => set({ editingTextField: textField }),
 
   setBackground: (background) => set({ background }),
 
@@ -262,6 +293,7 @@ const useStore = create((set, get) => ({
           // Don't save video files to storage, only metadata
           mediaSrc: card.mediaType === 'video' ? null : card.mediaSrc
         })),
+        textFields: state.textFields,
         zoomLevel: state.zoomLevel,
         panX: state.panX,
         panY: state.panY,
@@ -294,13 +326,15 @@ const useStore = create((set, get) => ({
       if (data) {
         set({
           cards: data.cards || [],
+          textFields: data.textFields || [],
           background: data.background || { color: '#2c3e50', image: null },
           zoomLevel: data.zoomLevel || 1,
           panX: data.panX || 0,
           panY: data.panY || 0,
           activeLayout: data.activeLayout || null,
           layoutSettings: data.layoutSettings || { strokeWidth: 4, color: 'rgba(0, 255, 255, 0.8)' },
-          currentCardId: (data.cards?.length || 0)
+          currentCardId: (data.cards?.length || 0),
+          currentTextFieldId: (data.textFields?.length || 0)
         });
 
         return true;
@@ -315,7 +349,9 @@ const useStore = create((set, get) => ({
 
   clearAll: () => set({
     cards: [],
+    textFields: [],
     currentCardId: 0,
+    currentTextFieldId: 0,
     videoFiles: new Map(),
     background: { color: '#2c3e50', image: null },
     zoomLevel: 1,
