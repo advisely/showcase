@@ -137,6 +137,20 @@ body {
   background-repeat: var(--bg-repeat, no-repeat);
 }
 
+/* Hand Mode - Prevent text selection on all elements */
+.playfield-container.hand-mode * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Hand Mode - Disable pointer events on playfield children (cards, text fields, etc.) but NOT playfield itself */
+.playfield-container.hand-mode .playfield > * {
+  pointer-events: none !important;
+}
+
 .playfield {
   width: 100%;
   height: 100%;

@@ -87,6 +87,15 @@ const Playfield = () => {
     }
   };
 
+  // Handle mousedown on container in hand mode (backup handler)
+  const handleContainerMouseDown = (e) => {
+    if (interactionMode === 'hand') {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - panX, y: e.clientY - panY });
+    }
+  };
+
   // Prevent text selection and dragging during panning
   useEffect(() => {
     const preventSelection = (e) => e.preventDefault();
@@ -134,11 +143,11 @@ const Playfield = () => {
     if (interactionMode !== 'hand' || !playfieldRef.current) return;
 
     const preventDefaults = (e) => {
-      // Only prevent if inside playfield container
+      // Only prevent defaults (not propagation) to allow panning handlers to fire
       const playfieldContainer = playfieldRef.current?.closest('.playfield-container');
       if (playfieldContainer?.contains(e.target)) {
         e.preventDefault();
-        e.stopPropagation();
+        // NOTE: Do NOT stopPropagation - we need events to reach panning handlers
       }
     };
 
@@ -162,14 +171,30 @@ const Playfield = () => {
   useEffect(() => {
     if (!isPanning) return;
 
+    let rafId = null;
+    let lastMouseEvent = null;
+
     const handleMouseMove = (e) => {
       e.preventDefault();
-      const newPanX = e.clientX - panStart.x;
-      const newPanY = e.clientY - panStart.y;
-      setPan(newPanX, newPanY);
+      lastMouseEvent = e;
+
+      // Throttle updates using requestAnimationFrame for smooth 60fps panning
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          if (lastMouseEvent) {
+            const newPanX = lastMouseEvent.clientX - panStart.x;
+            const newPanY = lastMouseEvent.clientY - panStart.y;
+            setPan(newPanX, newPanY);
+          }
+          rafId = null;
+        });
+      }
     };
 
     const handleMouseUp = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
       setIsPanning(false);
       saveToStorage();
     };
@@ -179,6 +204,9 @@ const Playfield = () => {
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -223,7 +251,8 @@ const Playfield = () => {
     WebkitUserDrag: 'none',
     position: 'relative',
     width: '100%',
-    height: '100%'
+    height: '100%',
+    minHeight: '100%'
   };
 
   const playfieldContent = (
@@ -246,7 +275,11 @@ const Playfield = () => {
 
   // Background is now handled via CSS custom properties
   return (
-    <div ref={containerRef} className="playfield-container">
+    <div
+      ref={containerRef}
+      className={`playfield-container${interactionMode === 'hand' ? ' hand-mode' : ''}`}
+      onMouseDown={interactionMode === 'hand' ? handleContainerMouseDown : undefined}
+    >
       {/* Overlay for image backgrounds - above background, below everything else */}
       {background.mode === 'image' && background.image && (
         <div
