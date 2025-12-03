@@ -23,23 +23,29 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
   const setEditingGroupId = useStore(state => state.setEditingGroupId);
   const setGroupSettingsModalOpen = useStore(state => state.setGroupSettingsModalOpen);
   const arrangeCardsInGroup = useStore(state => state.arrangeCardsInGroup);
+  const toggleGroupExpanded = useStore(state => state.toggleGroupExpanded);
   const saveToStorage = useStore(state => state.saveToStorage);
   const zoomLevel = useStore(state => state.zoomLevel);
   const cards = useStore(state => state.cards);
 
   const isSelected = selectedGroupId === group.id;
-  const cardCount = cards.filter(c => c.groupId === group.id).length;
+  const groupCards = cards.filter(c => c.groupId === group.id);
+  const cardCount = groupCards.length;
+  const isExpanded = group.expanded ?? false;
 
   // Draggable setup for moving the group
+  // Use different ID than droppable to prevent dnd-kit confusion
+  const dragId = `drag-${group.id}`;
   const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
-    id: group.id,
-    data: { type: 'group' },
+    id: dragId,
+    data: { type: 'group', groupId: group.id },
   });
 
   // Droppable setup for receiving cards
+  // Use the original group.id so cards can be dropped onto it
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: group.id,
-    data: { type: 'group', groupId: group.id },
+    data: { type: 'group-drop', groupId: group.id },
   });
 
   // Combine refs for both draggable and droppable
@@ -164,6 +170,21 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
   const handleArrangeCards = (layout) => {
     arrangeCardsInGroup(group.id, layout);
     saveToStorage();
+  };
+
+  const handleToggleExpand = (e) => {
+    e.stopPropagation();
+    toggleGroupExpanded(group.id);
+    saveToStorage();
+  };
+
+  // Double-click on group body to expand/collapse
+  const handleBodyDoubleClick = (e) => {
+    e.stopPropagation();
+    if (!isEditingName) {
+      toggleGroupExpanded(group.id);
+      saveToStorage();
+    }
   };
 
   // Border style based on settings
@@ -335,6 +356,13 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
           {/* Actions */}
           <div style={{ display: 'flex', gap: 4 }}>
             <button
+              onClick={handleToggleExpand}
+              title={isExpanded ? "Show thumbnails" : "Expand cards"}
+              style={headerButtonStyle}
+            >
+              {isExpanded ? '⊟' : '⊞'}
+            </button>
+            <button
               onClick={handleOpenSettings}
               title="Settings"
               style={headerButtonStyle}
@@ -356,6 +384,80 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
               ×
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Thumbnail grid when not expanded */}
+      {!isExpanded && cardCount > 0 && (
+        <div
+          onDoubleClick={handleBodyDoubleClick}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(auto-fill, minmax(60px, 1fr))`,
+            gap: 8,
+            padding: 12,
+            paddingTop: style.showHeader ? 12 : 40,
+            height: style.showHeader ? 'calc(100% - 40px)' : '100%',
+            overflowY: 'auto',
+            cursor: 'pointer',
+          }}
+        >
+          {groupCards.map((card) => (
+            <div
+              key={card.id}
+              style={{
+                width: '100%',
+                aspectRatio: card.orientation === 'landscape' ? '3/2' : '2/3',
+                borderRadius: borderRadius.sm,
+                overflow: 'hidden',
+                backgroundColor: '#1a1a1a',
+                boxShadow: darkShadows.sm,
+              }}
+            >
+              {card.mediaType === 'video' ? (
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#2a2a2a',
+                  color: '#888',
+                  fontSize: 20,
+                }}>
+                  ▶
+                </div>
+              ) : (
+                <img
+                  src={card.mediaSrc}
+                  alt=""
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Hint text when expanded (cards shown separately on canvas) */}
+      {isExpanded && cardCount > 0 && (
+        <div
+          onDoubleClick={handleBodyDoubleClick}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: style.showHeader ? 'calc(100% - 40px)' : '100%',
+            color: '#666',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          Double-click to collapse • {cardCount} cards expanded on canvas
         </div>
       )}
 

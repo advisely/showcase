@@ -53,13 +53,25 @@ const Playfield = () => {
     const deltaX = delta.x / zoomLevel;
     const deltaY = delta.y / zoomLevel;
 
-    // Check if dragging a group (by ID - more reliable than data type)
-    const group = groups.find(g => g.id === active.id);
-    if (group) {
-      // Use atomic update to move group and all its cards together
-      moveGroupWithCards(group.id, deltaX, deltaY);
-      saveToStorage();
-      return;
+    // Check if dragging a group (drag ID format: "drag-group-X")
+    // Also check the data.type and data.groupId for reliability
+    const activeData = active.data?.current;
+    let groupId = null;
+
+    if (activeData?.type === 'group' && activeData?.groupId) {
+      groupId = activeData.groupId;
+    } else if (typeof active.id === 'string' && active.id.startsWith('drag-group-')) {
+      groupId = active.id.replace('drag-', '');
+    }
+
+    if (groupId) {
+      const group = groups.find(g => g.id === groupId);
+      if (group) {
+        // Use atomic update to move group and all its cards together
+        moveGroupWithCards(group.id, deltaX, deltaY);
+        saveToStorage();
+        return;
+      }
     }
 
     // Check if dragging a card
@@ -293,6 +305,13 @@ const Playfield = () => {
   // Sort groups by order for consistent z-index layering
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
 
+  // Filter cards: hide cards that are in non-expanded groups (they show as thumbnails inside the group)
+  const visibleCards = cards.filter(card => {
+    if (!card.groupId) return true; // Ungrouped cards are always visible
+    const cardGroup = groups.find(g => g.id === card.groupId);
+    return cardGroup?.expanded ?? true; // Show if group is expanded (or group not found)
+  });
+
   const playfieldContent = (
     <div
       ref={playfieldRef}
@@ -306,8 +325,8 @@ const Playfield = () => {
       {sortedGroups.map((group, index) => (
         <GroupContainer key={group.id} group={group} zIndex={index + 1} />
       ))}
-      {/* Cards render above groups */}
-      {cards.map((card, index) => (
+      {/* Cards render above groups - only visible/expanded cards */}
+      {visibleCards.map((card, index) => (
         <Card key={card.id} card={card} zIndex={groups.length + index + 1} />
       ))}
       {textFields.map((textField, index) => (

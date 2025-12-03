@@ -231,7 +231,8 @@ const useStore = create((set, get) => ({
       },
       // Layout within this group
       innerLayout: groupData.innerLayout || 'free', // 'free' | 'grid' | 'line' | 'circle'
-      collapsed: false,
+      collapsed: false, // Collapse to just header bar
+      expanded: groupData.expanded ?? false, // false = thumbnail view, true = full-size cards
       timestamp: Date.now(),
     };
 
@@ -310,6 +311,13 @@ const useStore = create((set, get) => ({
   setEditingGroupId: (groupId) => set({ editingGroupId: groupId }),
 
   setGroupSettingsModalOpen: (isOpen) => set({ groupSettingsModalOpen: isOpen }),
+
+  // Toggle group expanded state (thumbnail view vs full-size cards)
+  toggleGroupExpanded: (groupId) => set((state) => ({
+    groups: state.groups.map(group =>
+      group.id === groupId ? { ...group, expanded: !group.expanded } : group
+    )
+  })),
 
   // Assign a card to a group
   assignCardToGroup: (cardId, groupId) => set((state) => ({
