@@ -309,7 +309,8 @@ const Playfield = () => {
   const visibleCards = cards.filter(card => {
     if (!card.groupId) return true; // Ungrouped cards are always visible
     const cardGroup = groups.find(g => g.id === card.groupId);
-    return cardGroup?.expanded ?? true; // Show if group is expanded (or group not found)
+    if (!cardGroup) return true; // Show if group not found (orphaned card)
+    return cardGroup.expanded === true; // Only show if explicitly expanded
   });
 
   const playfieldContent = (
