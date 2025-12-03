@@ -295,8 +295,6 @@ const Toolbar = () => {
                 >
                   <span>〰</span> Snake
                 </motion.button>
-              </div>
-              <div style={{ borderTop: '1px solid #444', margin: '8px 0', paddingTop: '8px' }}>
                 <motion.button
                   className="btn btn-secondary"
                   onClick={() => {
@@ -306,7 +304,6 @@ const Toolbar = () => {
                   title="Organize cards into groups (Parts, Chapters, Sections)"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  style={{ width: '100%' }}
                 >
                   <span>📑</span> Groups
                 </motion.button>

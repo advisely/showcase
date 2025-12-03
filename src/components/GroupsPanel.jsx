@@ -76,38 +76,7 @@ const GroupsPanel = () => {
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
 
   return (
-    <>
-      {/* Toggle Button */}
-      <motion.button
-        onClick={() => setGroupsPanelOpen(!groupsPanelOpen)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        style={{
-          position: 'fixed',
-          left: groupsPanelOpen ? 260 : 10,
-          top: 70,
-          width: 36,
-          height: 36,
-          borderRadius: borderRadius.md,
-          backgroundColor: '#2a2a2a',
-          border: 'none',
-          color: '#e0e0e0',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: darkShadows.md,
-          zIndex: 1001,
-          transition: 'left 0.3s ease',
-          fontSize: 18,
-        }}
-        title={groupsPanelOpen ? 'Close Groups Panel' : 'Open Groups Panel'}
-      >
-        {groupsPanelOpen ? '◀' : '📑'}
-      </motion.button>
-
-      {/* Panel */}
-      <AnimatePresence>
+    <AnimatePresence>
         {groupsPanelOpen && (
           <motion.div
             variants={fadeInLeft}
@@ -354,8 +323,7 @@ const GroupsPanel = () => {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </>
+    </AnimatePresence>
   );
 };
 
