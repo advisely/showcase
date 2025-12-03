@@ -53,11 +53,24 @@ const Playfield = () => {
       if (activeData?.type === 'group') {
         const group = groups.find(g => g.id === active.id);
         if (group) {
-          const newX = (group.position?.x || 0) + (delta.x / zoomLevel);
-          const newY = (group.position?.y || 0) + (delta.y / zoomLevel);
+          const deltaX = delta.x / zoomLevel;
+          const deltaY = delta.y / zoomLevel;
+          const newX = (group.position?.x || 0) + deltaX;
+          const newY = (group.position?.y || 0) + deltaY;
 
+          // Update group position
           updateGroup(group.id, {
             position: { x: newX, y: newY }
+          });
+
+          // Move all cards that belong to this group
+          const groupCards = cards.filter(c => c.groupId === group.id);
+          groupCards.forEach(card => {
+            const cardNewX = (card.position?.x || 0) + deltaX;
+            const cardNewY = (card.position?.y || 0) + deltaY;
+            updateCard(card.id, {
+              position: { x: cardNewX, y: cardNewY }
+            });
           });
 
           saveToStorage();
