@@ -10,6 +10,7 @@ const Card = ({ card, zIndex = 1 }) => {
     width: card.orientation === 'landscape' ? 300 : 200,
     height: card.orientation === 'landscape' ? 200 : 300
   });
+  const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0 });
 
   const cardRef = useRef(null);
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
@@ -21,6 +22,9 @@ const Card = ({ card, zIndex = 1 }) => {
   const zoomLevel = useStore(state => state.zoomLevel);
   const interactionMode = useStore(state => state.interactionMode);
   const groups = useStore(state => state.groups);
+  const assignCardToGroup = useStore(state => state.assignCardToGroup);
+  const removeCardFromGroup = useStore(state => state.removeCardFromGroup);
+  const setNotification = useStore(state => state.setNotification);
 
   // Find the group this card belongs to (if any)
   const cardGroup = card.groupId ? groups.find(g => g.id === card.groupId) : null;
@@ -110,7 +114,46 @@ const Card = ({ card, zIndex = 1 }) => {
     saveToStorage();
   };
 
+  // Handle right-click context menu
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ show: true, x: e.clientX, y: e.clientY });
+  };
+
+  // Close context menu
+  const closeContextMenu = () => {
+    setContextMenu({ show: false, x: 0, y: 0 });
+  };
+
+  // Handle assign to group
+  const handleAssignToGroup = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    assignCardToGroup(card.id, groupId);
+    saveToStorage();
+    setNotification({ message: `Card added to "${group?.name}"`, type: 'success' });
+    closeContextMenu();
+  };
+
+  // Handle remove from group
+  const handleRemoveFromGroup = () => {
+    removeCardFromGroup(card.id);
+    saveToStorage();
+    setNotification({ message: 'Card removed from group', type: 'info' });
+    closeContextMenu();
+  };
+
+  // Close context menu when clicking elsewhere
+  useEffect(() => {
+    if (contextMenu.show) {
+      const handleClick = () => closeContextMenu();
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu.show]);
+
   return (
+    <>
     <motion.div
       ref={setNodeRef}
       style={style}
@@ -123,6 +166,7 @@ const Card = ({ card, zIndex = 1 }) => {
       {...listeners}
       {...attributes}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
     >
       <div className="card-content" ref={cardRef}>
         {card.mediaType === 'video' ? (
@@ -207,6 +251,104 @@ const Card = ({ card, zIndex = 1 }) => {
         style={{ cursor: 'nwse-resize' }}
       />
     </motion.div>
+
+    {/* Context Menu */}
+    {contextMenu.show && (
+      <div
+        style={{
+          position: 'fixed',
+          left: contextMenu.x,
+          top: contextMenu.y,
+          backgroundColor: '#2a2a2a',
+          borderRadius: 8,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          zIndex: 10000,
+          minWidth: 180,
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid #3a3a3a',
+          color: '#888',
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}>
+          Assign to Group
+        </div>
+
+        {/* Groups list */}
+        {groups.length === 0 ? (
+          <div style={{ padding: '12px', color: '#666', fontSize: 13, textAlign: 'center' }}>
+            No groups yet
+          </div>
+        ) : (
+          groups.map(group => (
+            <button
+              key={group.id}
+              onClick={() => handleAssignToGroup(group.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '10px 12px',
+                border: 'none',
+                background: card.groupId === group.id ? '#3a3a3a' : 'transparent',
+                color: '#e0e0e0',
+                fontSize: 13,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.target.style.background = '#3a3a3a'}
+              onMouseLeave={(e) => e.target.style.background = card.groupId === group.id ? '#3a3a3a' : 'transparent'}
+            >
+              <div style={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: group.style.color,
+                flexShrink: 0,
+              }} />
+              <span style={{ flex: 1 }}>{group.name}</span>
+              {card.groupId === group.id && <span style={{ color: '#27ae60' }}>✓</span>}
+            </button>
+          ))
+        )}
+
+        {/* Remove from group option */}
+        {card.groupId && (
+          <>
+            <div style={{ borderTop: '1px solid #3a3a3a', margin: '4px 0' }} />
+            <button
+              onClick={handleRemoveFromGroup}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '10px 12px',
+                border: 'none',
+                background: 'transparent',
+                color: '#e74c3c',
+                fontSize: 13,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+              onMouseEnter={(e) => e.target.style.background = '#3a3a3a'}
+              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+            >
+              <span>✕</span>
+              <span>Remove from group</span>
+            </button>
+          </>
+        )}
+      </div>
+    )}
+    </>
   );
 };
 

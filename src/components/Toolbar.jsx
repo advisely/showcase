@@ -38,6 +38,9 @@ const Toolbar = () => {
   const arrangeInLine = useStore(state => state.arrangeInLine);
   const arrangeInSnake = useStore(state => state.arrangeInSnake);
   const saveToStorage = useStore(state => state.saveToStorage);
+  const setGroupsPanelOpen = useStore(state => state.setGroupsPanelOpen);
+  const setActiveLayout = useStore(state => state.setActiveLayout);
+  const setNotification = useStore(state => state.setNotification);
   const cards = useStore(state => state.cards);
   const videoFiles = useStore(state => state.videoFiles);
   const isSaving = useStore(state => state.isSaving);
@@ -93,6 +96,13 @@ const Toolbar = () => {
   const handleLayout = (layoutFn) => {
     layoutFn();
     saveToStorage();
+  };
+
+  // Groups mode handler - clears layout and enables free positioning
+  const handleGroupsMode = () => {
+    setActiveLayout(null); // Clear any active layout
+    setGroupsPanelOpen(true); // Open groups panel
+    setNotification({ message: 'Groups mode: Create groups and drag cards into them', type: 'info' });
   };
 
   // Save handlers
@@ -284,6 +294,21 @@ const Toolbar = () => {
                   whileTap={{ scale: 0.95 }}
                 >
                   <span>〰</span> Snake
+                </motion.button>
+              </div>
+              <div style={{ borderTop: '1px solid #444', margin: '8px 0', paddingTop: '8px' }}>
+                <motion.button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    handleGroupsMode();
+                    setIsElementsMenuOpen(false);
+                  }}
+                  title="Organize cards into groups (Parts, Chapters, Sections)"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ width: '100%' }}
+                >
+                  <span>📑</span> Groups
                 </motion.button>
               </div>
             </motion.div>

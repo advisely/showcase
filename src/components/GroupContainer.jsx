@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import useStore from '../store/useStore';
 import { darkShadows, borderRadius } from '../lib/theme';
 import { springTransition } from '../lib/animations';
@@ -31,10 +31,22 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
   const cardCount = cards.filter(c => c.groupId === group.id).length;
 
   // Draggable setup for moving the group
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
     id: group.id,
     data: { type: 'group' },
   });
+
+  // Droppable setup for receiving cards
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: group.id,
+    data: { type: 'group', groupId: group.id },
+  });
+
+  // Combine refs for both draggable and droppable
+  const setNodeRef = (node) => {
+    setDraggableRef(node);
+    setDroppableRef(node);
+  };
 
   // Calculate position with drag transform
   const x = (group.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
@@ -217,14 +229,22 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
     );
   }
 
+  // Visual feedback for drop target
+  const dropHighlight = isOver ? `0 0 0 4px ${style.color}, 0 0 20px ${style.color}66` : '';
+  const combinedShadow = isSelected
+    ? `0 0 0 3px ${style.color}`
+    : isOver
+      ? dropHighlight
+      : darkShadows.sm;
+
   return (
     <motion.div
       ref={setNodeRef}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{
         opacity: 1,
-        scale: 1,
-        boxShadow: isSelected ? `0 0 0 3px ${style.color}` : darkShadows.sm,
+        scale: isOver ? 1.02 : 1,
+        boxShadow: combinedShadow,
       }}
       transition={springTransition}
       style={{
@@ -233,8 +253,8 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
         top: y,
         width: group.size.width,
         height: group.size.height,
-        backgroundColor: bgColor,
-        border: getBorderStyle(),
+        backgroundColor: isOver ? `${style.color}22` : bgColor,
+        border: isOver ? `3px solid ${style.color}` : getBorderStyle(),
         borderRadius: borderRadius.lg,
         zIndex: zIndex + (isDragging ? 1000 : 0),
         pointerEvents: 'auto',
