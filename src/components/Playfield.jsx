@@ -26,7 +26,7 @@ const Playfield = () => {
   const interactionMode = useStore(state => state.interactionMode);
   const updateCard = useStore(state => state.updateCard);
   const updateTextField = useStore(state => state.updateTextField);
-  const updateGroup = useStore(state => state.updateGroup);
+  const moveGroupWithCards = useStore(state => state.moveGroupWithCards);
   const assignCardToGroup = useStore(state => state.assignCardToGroup);
   const setPan = useStore(state => state.setPan);
   const setZoom = useStore(state => state.setZoom);
@@ -46,70 +46,55 @@ const Playfield = () => {
   // Handle card, text field, and group drag
   const handleDragEnd = (event) => {
     const { active, delta, over } = event;
-    const activeData = active.data?.current;
 
-    if (delta.x !== 0 || delta.y !== 0) {
-      // Check if dragging a group
-      if (activeData?.type === 'group') {
-        const group = groups.find(g => g.id === active.id);
-        if (group) {
-          const deltaX = delta.x / zoomLevel;
-          const deltaY = delta.y / zoomLevel;
-          const newX = (group.position?.x || 0) + deltaX;
-          const newY = (group.position?.y || 0) + deltaY;
+    // Skip if no movement
+    if (delta.x === 0 && delta.y === 0) return;
 
-          // Update group position
-          updateGroup(group.id, {
-            position: { x: newX, y: newY }
-          });
+    const deltaX = delta.x / zoomLevel;
+    const deltaY = delta.y / zoomLevel;
 
-          // Move all cards that belong to this group
-          const groupCards = cards.filter(c => c.groupId === group.id);
-          groupCards.forEach(card => {
-            const cardNewX = (card.position?.x || 0) + deltaX;
-            const cardNewY = (card.position?.y || 0) + deltaY;
-            updateCard(card.id, {
-              position: { x: cardNewX, y: cardNewY }
-            });
-          });
+    // Check if dragging a group (by ID - more reliable than data type)
+    const group = groups.find(g => g.id === active.id);
+    if (group) {
+      // Use atomic update to move group and all its cards together
+      moveGroupWithCards(group.id, deltaX, deltaY);
+      saveToStorage();
+      return;
+    }
 
-          saveToStorage();
-          return;
+    // Check if dragging a card
+    const card = cards.find(c => c.id === active.id);
+    if (card) {
+      // Check if dropping onto a group
+      if (over) {
+        const overGroup = groups.find(g => g.id === over.id);
+        if (overGroup && card.groupId !== overGroup.id) {
+          assignCardToGroup(card.id, overGroup.id);
         }
       }
 
-      const card = cards.find(c => c.id === active.id);
-      const textField = textFields.find(t => t.id === active.id);
-
-      if (card) {
-        // Check if dropping onto a group
-        if (over) {
-          const overGroup = groups.find(g => g.id === over.id);
-          if (overGroup && card.groupId !== overGroup.id) {
-            assignCardToGroup(card.id, overGroup.id);
-          }
+      updateCard(card.id, {
+        position: {
+          x: (card.position?.x || 0) + deltaX,
+          y: (card.position?.y || 0) + deltaY
         }
+      });
 
-        // Compensate for zoom level when saving final position
-        const newX = (card.position?.x || 0) + (delta.x / zoomLevel);
-        const newY = (card.position?.y || 0) + (delta.y / zoomLevel);
+      saveToStorage();
+      return;
+    }
 
-        updateCard(card.id, {
-          position: { x: newX, y: newY }
-        });
+    // Check if dragging a text field
+    const textField = textFields.find(t => t.id === active.id);
+    if (textField) {
+      updateTextField(textField.id, {
+        position: {
+          x: (textField.position?.x || 0) + deltaX,
+          y: (textField.position?.y || 0) + deltaY
+        }
+      });
 
-        saveToStorage();
-      } else if (textField) {
-        // Compensate for zoom level when saving final position
-        const newX = (textField.position?.x || 0) + (delta.x / zoomLevel);
-        const newY = (textField.position?.y || 0) + (delta.y / zoomLevel);
-
-        updateTextField(textField.id, {
-          position: { x: newX, y: newY }
-        });
-
-        saveToStorage();
-      }
+      saveToStorage();
     }
   };
 

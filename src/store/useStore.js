@@ -249,6 +249,36 @@ const useStore = create((set, get) => ({
     )
   })),
 
+  // Atomic update: Move group and all its cards together (prevents race conditions)
+  moveGroupWithCards: (groupId, deltaX, deltaY) => set((state) => {
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return state;
+
+    const newGroupPosition = {
+      x: (group.position?.x || 0) + deltaX,
+      y: (group.position?.y || 0) + deltaY
+    };
+
+    return {
+      groups: state.groups.map(g =>
+        g.id === groupId
+          ? { ...g, position: newGroupPosition }
+          : g
+      ),
+      cards: state.cards.map(card =>
+        card.groupId === groupId
+          ? {
+              ...card,
+              position: {
+                x: (card.position?.x || 0) + deltaX,
+                y: (card.position?.y || 0) + deltaY
+              }
+            }
+          : card
+      )
+    };
+  }),
+
   deleteGroup: (groupId) => set((state) => {
     // Remove group and unassign all cards from this group
     const updatedCards = state.cards.map(card =>
