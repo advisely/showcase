@@ -1,19 +1,24 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
-import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { DndContext, useSensor, useSensors, PointerSensor, DragOverlay } from '@dnd-kit/core';
 import throttle from 'lodash.throttle';
 import useStore from '../store/useStore';
 import Card from './Card';
-import SimpleCard from './SimpleCard';
+import GroupContainer from './GroupContainer';
 import LayoutGuides from './LayoutGuides';
 import TextField from './TextField';
+import GroupsPanel from './GroupsPanel';
+import GroupSettingsModal from './GroupSettingsModal';
 
 const Playfield = () => {
   const playfieldRef = useRef(null);
+  const containerRef = useRef(null);
+  const panStartRef = useRef({ x: 0, y: 0 }); // Stable ref to prevent effect re-runs
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const cards = useStore(state => state.cards);
   const textFields = useStore(state => state.textFields);
+  const groups = useStore(state => state.groups);
   const background = useStore(state => state.background);
   const zoomLevel = useStore(state => state.zoomLevel);
   const panX = useStore(state => state.panX);
@@ -21,6 +26,8 @@ const Playfield = () => {
   const interactionMode = useStore(state => state.interactionMode);
   const updateCard = useStore(state => state.updateCard);
   const updateTextField = useStore(state => state.updateTextField);
+  const updateGroup = useStore(state => state.updateGroup);
+  const assignCardToGroup = useStore(state => state.assignCardToGroup);
   const setPan = useStore(state => state.setPan);
   const setZoom = useStore(state => state.setZoom);
   const saveToStorage = useStore(state => state.saveToStorage);
@@ -36,15 +43,40 @@ const Playfield = () => {
 
   const isDndEnabled = interactionMode === 'cursor';
 
-  // Handle card and text field drag
+  // Handle card, text field, and group drag
   const handleDragEnd = (event) => {
-    const { active, delta } = event;
+    const { active, delta, over } = event;
+    const activeData = active.data?.current;
 
     if (delta.x !== 0 || delta.y !== 0) {
+      // Check if dragging a group
+      if (activeData?.type === 'group') {
+        const group = groups.find(g => g.id === active.id);
+        if (group) {
+          const newX = (group.position?.x || 0) + (delta.x / zoomLevel);
+          const newY = (group.position?.y || 0) + (delta.y / zoomLevel);
+
+          updateGroup(group.id, {
+            position: { x: newX, y: newY }
+          });
+
+          saveToStorage();
+          return;
+        }
+      }
+
       const card = cards.find(c => c.id === active.id);
       const textField = textFields.find(t => t.id === active.id);
 
       if (card) {
+        // Check if dropping onto a group
+        if (over) {
+          const overGroup = groups.find(g => g.id === over.id);
+          if (overGroup && card.groupId !== overGroup.id) {
+            assignCardToGroup(card.id, overGroup.id);
+          }
+        }
+
         // Compensate for zoom level when saving final position
         const newX = (card.position?.x || 0) + (delta.x / zoomLevel);
         const newY = (card.position?.y || 0) + (delta.y / zoomLevel);
@@ -168,6 +200,11 @@ const Playfield = () => {
     }
   }, [interactionMode]);
 
+  // Sync panStart state to ref for stable event handler references
+  useEffect(() => {
+    panStartRef.current = panStart;
+  }, [panStart]);
+
   useEffect(() => {
     if (!isPanning) return;
 
@@ -182,8 +219,9 @@ const Playfield = () => {
       if (!rafId) {
         rafId = requestAnimationFrame(() => {
           if (lastMouseEvent) {
-            const newPanX = lastMouseEvent.clientX - panStart.x;
-            const newPanY = lastMouseEvent.clientY - panStart.y;
+            // Use ref to get current panStart values (stable reference)
+            const newPanX = lastMouseEvent.clientX - panStartRef.current.x;
+            const newPanY = lastMouseEvent.clientY - panStartRef.current.y;
             setPan(newPanX, newPanY);
           }
           rafId = null;
@@ -210,10 +248,9 @@ const Playfield = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isPanning, panStart.x, panStart.y, setPan, saveToStorage]);
+  }, [isPanning, setPan, saveToStorage]); // Removed panStart.x/y - using ref instead
 
   // Use CSS custom properties for background to fix initial render timing issues
-  const containerRef = useRef(null);
   useLayoutEffect(() => {
     if (!containerRef.current) return;
 
@@ -255,6 +292,9 @@ const Playfield = () => {
     minHeight: '100%'
   };
 
+  // Sort groups by order for consistent z-index layering
+  const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+
   const playfieldContent = (
     <div
       ref={playfieldRef}
@@ -264,17 +304,25 @@ const Playfield = () => {
       onDragStart={(e) => e.preventDefault()}
     >
       <LayoutGuides />
+      {/* Render groups first (behind cards) */}
+      {sortedGroups.map((group, index) => (
+        <GroupContainer key={group.id} group={group} zIndex={index + 1} />
+      ))}
+      {/* Cards render above groups */}
       {cards.map((card, index) => (
-        <Card key={card.id} card={card} zIndex={index + 1} />
+        <Card key={card.id} card={card} zIndex={groups.length + index + 1} />
       ))}
       {textFields.map((textField, index) => (
-        <TextField key={textField.id} textField={textField} zIndex={cards.length + index + 1} />
+        <TextField key={textField.id} textField={textField} zIndex={groups.length + cards.length + index + 1} />
       ))}
     </div>
   );
 
   // Background is now handled via CSS custom properties
   return (
+    <>
+    <GroupsPanel />
+    <GroupSettingsModal />
     <div
       ref={containerRef}
       className={`playfield-container${interactionMode === 'hand' ? ' hand-mode' : ''}`}
@@ -323,6 +371,7 @@ const Playfield = () => {
         playfieldContent
       )}
     </div>
+    </>
   );
 };
 

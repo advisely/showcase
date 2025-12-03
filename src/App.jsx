@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import Toolbar from './components/Toolbar';
 import Playfield from './components/Playfield';
 import VerticalToolbar from './components/VerticalToolbar';
@@ -28,21 +29,23 @@ function App() {
   }, [loadFromStorage]);
 
   return (
-    <div className="app-container">
-      <Toolbar />
+    <ErrorBoundary>
+      <div className="app-container">
+        <Toolbar />
 
-      <div style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
-        <VerticalToolbar />
-        <Playfield />
+        <div style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+          <VerticalToolbar />
+          <Playfield />
+        </div>
+
+        <OrientationModal />
+        <MaximizedView />
+        <Minimap />
+        <LayoutCustomizationMenu />
+        <BackgroundMenu />
+        <Toast />
       </div>
-
-      <OrientationModal />
-      <MaximizedView />
-      <Minimap />
-      <LayoutCustomizationMenu />
-      <BackgroundMenu />
-      <Toast />
-    </div>
+    </ErrorBoundary>
   );
 }
 

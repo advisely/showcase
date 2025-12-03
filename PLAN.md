@@ -42,6 +42,86 @@ Transform Showcase into the ultimate **visual storytelling platform** - not slid
 
 ---
 
+## 🗂️ Groups & Organization Feature (v2.3)
+
+> **Goal:** Organize cards into logical groups (Parts, Chapters, Sections) for structured presentations
+
+### ✅ Implemented Features
+
+#### Group System
+- **Dynamic Groups** - Create unlimited groups with custom names (Parts, Chapters, Sections, etc.)
+- **Visual Containers** - Draggable, resizable containers on the canvas
+- **Card Assignment** - Drag cards into groups or assign via right-click
+- **Group Colors** - 8 preset colors + custom color picker
+- **Collapsible** - Collapse groups to save canvas space
+
+#### Group Visual Settings
+- **Card Indicators** - 5 styles:
+  - `● Dot` - Small colored circle in corner
+  - `▢ Border` - Colored border around card
+  - `▔ Banner` - Colored bar at top
+  - `◧ Tint` - Color overlay on card
+  - `○ None` - No visual indicator
+- **Container Boundary** - Solid/dashed/dotted border styles
+- **Background Opacity** - 0-30% group background color
+- **Show/Hide Header** - Toggle group name bar
+
+#### Inner Layout Options
+- **Free** - Cards positioned freely within group
+- **Grid** - Auto-arrange cards in grid
+- **Line** - Auto-arrange cards in horizontal line
+- **Circle** - Auto-arrange cards in circular pattern
+
+#### Groups Panel (Sidebar)
+- Toggle sidebar with 📑 button
+- Create new groups with "+ Add" button
+- Drag to reorder groups
+- Click to pan to group on canvas
+- Card count per group
+- Ungrouped cards indicator
+
+### Technical Implementation
+
+**New Files:**
+- `src/components/GroupContainer.jsx` - Draggable container component
+- `src/components/GroupsPanel.jsx` - Sidebar management panel
+- `src/components/GroupSettingsModal.jsx` - Visual settings configuration
+
+**Store Additions (`useStore.js`):**
+```javascript
+// State
+groups: [],
+currentGroupId: 0,
+selectedGroupId: null,
+groupsPanelOpen: false,
+editingGroupId: null,
+groupSettingsModalOpen: false,
+groupColors: ['#3498db', '#9b59b6', '#27ae60', ...],
+
+// Actions
+addGroup, updateGroup, deleteGroup, reorderGroups,
+setSelectedGroupId, assignCardToGroup, removeCardFromGroup,
+getCardsInGroup, getUngroupedCards, arrangeCardsInGroup,
+autoResizeGroup, panToGroup
+```
+
+**Card Integration:**
+- Added `groupId` property to cards
+- Group indicator rendering based on settings
+- Drag-to-group assignment
+
+**Persistence:**
+- Groups saved to IndexedDB
+- Includes all style settings and layout preferences
+
+### Use Cases
+- **Presentations** - Part 1: Introduction, Part 2: Analysis, Part 3: Conclusion
+- **Portfolios** - Chapter 1: Web Design, Chapter 2: Mobile Apps
+- **Documentation** - Section by topic or category
+- **Storyboards** - Scene grouping for visual narratives
+
+---
+
 ## 🚀 Phase 1: Visual Elements (Weeks 1-4)
 
 > **Goal:** Rich visual toolset for design and composition
@@ -544,6 +624,186 @@ Transform Showcase into the ultimate **visual storytelling platform** - not slid
 
 ---
 
+## 🔧 Phase 0: Bug Fixes & Animation System (v2.2)
+
+> **Goal:** Fix critical bugs and establish consistent animation/design system
+
+### 0.1 Critical Bug Fixes ✅
+
+**Priority:** CRITICAL | **Complexity:** LOW
+
+| Bug | File | Issue | Fix |
+|-----|------|-------|-----|
+| Mousewheel zoom broken | `Playfield.jsx:121` | `containerRef` used before declaration | Move ref declaration before useEffect |
+| ID collision on reload | `useStore.js:554-555` | Uses array length instead of max ID | Calculate max ID from existing items |
+| Video files not persisting | `useStore.js:12` | `Map` cannot be JSON serialized | Replace with Object for serialization |
+| Memory leak in panning | `Playfield.jsx:171-213` | Event listeners accumulate | Use stable ref for panStart |
+| Notification race condition | `useStore.js:162-168` | Multiple timeouts interfere | Track notification ID |
+
+---
+
+### 0.2 Animation System (BakedShift Pattern) 🎬
+
+**Priority:** HIGH | **Complexity:** MEDIUM
+
+**New Files:**
+- `src/lib/animations.js` - Centralized Framer Motion variants
+- `src/lib/theme.js` - Design tokens (shadows, spacing, colors)
+
+#### Core Animation Variants
+
+```javascript
+// Spring physics - bouncy, natural feel
+export const springTransition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+};
+
+// Smooth tween for subtle effects
+export const smoothTransition = {
+  type: 'tween',
+  duration: 0.3,
+  ease: 'easeInOut',
+};
+
+// Stagger pattern for lists
+export const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+  },
+};
+```
+
+#### Animation Usage by Component
+
+| Component | Animation | Pattern |
+|-----------|-----------|---------|
+| Card.jsx | `cardHover` | Lift + shadow on hover |
+| Toast.jsx | `toastAnimation` | Slide-down with spring |
+| ExpressionMenu.jsx | `menuSlideIn` | Slide from right |
+| BackgroundMenu.jsx | `menuSlideIn` | Slide from right |
+| MaximizedView.jsx | `modalOverlay` + `modalContent` | Fade overlay + scale content |
+| Toolbar dropdowns | `staggerContainer` + `staggerItem` | Sequential item entrance |
+
+---
+
+### 0.3 Design Tokens System 🎨
+
+**Priority:** HIGH | **Complexity:** LOW
+
+#### Shadow Hierarchy
+
+```javascript
+export const shadows = {
+  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',      // Subtle: inputs, list items
+  md: '0 4px 6px -1px rgb(0 0 0 / 0.1)',    // Default: cards, containers
+  lg: '0 10px 15px -3px rgb(0 0 0 / 0.1)',  // Elevated: hover states
+  xl: '0 20px 25px -5px rgb(0 0 0 / 0.15)', // High: modals, dropdowns
+  glow: '0 0 20px rgb(102 126 234 / 0.5)',  // Focus states
+};
+
+// Dark mode (app default)
+export const darkShadows = {
+  sm: '0 1px 2px 0 rgb(0 0 0 / 0.3)',
+  md: '0 4px 6px -1px rgb(0 0 0 / 0.4)',
+  lg: '0 10px 15px -3px rgb(0 0 0 / 0.4)',
+  xl: '0 20px 25px -5px rgb(0 0 0 / 0.5)',
+  glow: '0 0 20px rgb(102 126 234 / 0.3)',
+};
+```
+
+#### Spacing & Border Radius
+
+```javascript
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
+export const borderRadius = { sm: 4, md: 8, lg: 12, xl: 16, full: 9999 };
+```
+
+---
+
+### 0.4 Error Boundary & Resilience 🛡️
+
+**Priority:** HIGH | **Complexity:** LOW
+
+**Features:**
+- Wrap App.jsx with error boundary component
+- Graceful error display with retry option
+- Log errors for debugging
+- Prevent full app crash from single component failure
+
+**Technical:**
+- New `ErrorBoundary.jsx` component
+- React error boundary pattern with `componentDidCatch`
+- Styled error UI matching app theme
+
+---
+
+### 0.5 Accessibility Foundations ♿
+
+**Priority:** MEDIUM | **Complexity:** LOW
+
+**Features:**
+- Respect `prefers-reduced-motion` media query
+- Add `aria-label` to icon buttons
+- Keyboard focus indicators
+- Semantic HTML improvements
+
+**Technical:**
+```javascript
+// Animation helper for accessibility
+export const getMotionProps = (prefersReducedMotion) => ({
+  initial: prefersReducedMotion ? false : 'hidden',
+  animate: 'visible',
+  transition: prefersReducedMotion ? { duration: 0 } : undefined,
+});
+```
+
+---
+
+### 0.6 Code Cleanup 🧹
+
+**Priority:** LOW | **Complexity:** LOW
+
+- [x] Remove `SimpleCard.jsx` (debug component)
+- [ ] Add `useCallback` for event handlers in hot paths
+- [ ] Add `useMemo` for computed layout values
+- [ ] Split large components (Toolbar, Playfield) - Phase 3+
+
+---
+
+## 📊 Updated Priority Matrix
+
+| Feature | Priority | Complexity | Impact | Phase | Status |
+|---------|----------|----------|--------|-------|--------|
+| **Critical Bug Fixes** | CRITICAL | LOW | VERY HIGH | 0.1 | ✅ Done |
+| **Animation System** | HIGH | MEDIUM | HIGH | 0.2 | ✅ Done |
+| **Design Tokens** | HIGH | LOW | MEDIUM | 0.3 | ✅ Done |
+| **Error Boundary** | HIGH | LOW | HIGH | 0.4 | ✅ Done |
+| **Groups & Organization** | HIGH | HIGH | VERY HIGH | v2.3 | ✅ Done |
+| Shape Tools | HIGH | MEDIUM | HIGH | 1.1 | Pending |
+| Advanced Text | HIGH | MEDIUM | HIGH | 1.2 | Pending |
+| Grouping (Selection-based) | HIGH | HIGH | HIGH | 3.1 | Pending |
+| Layers Panel | HIGH | MEDIUM | HIGH | 3.2 | Pending |
+| Presentation Mode | HIGH | HIGH | VERY HIGH | 4.1 | Pending |
+
+---
+
+## 🎯 Animation Timing Reference
+
+| Animation Type | Duration | Easing |
+|----------------|----------|--------|
+| Micro-interactions | 150-200ms | ease-out |
+| Card hover | 200-300ms | spring |
+| Page transitions | 300-400ms | custom bezier |
+| Modal enter/exit | 200-300ms | spring |
+| Stagger delay | 50-100ms | linear |
+| Toast notifications | 200ms in, 150ms out | spring |
+
+---
+
 **Next Review:** After Phase 1 completion
-**Last Updated:** January 2025
+**Last Updated:** December 2025
 **Maintained by:** Yassine Boumiza & AI Development Team

@@ -20,6 +20,12 @@ const Card = ({ card, zIndex = 1 }) => {
   const saveToStorage = useStore(state => state.saveToStorage);
   const zoomLevel = useStore(state => state.zoomLevel);
   const interactionMode = useStore(state => state.interactionMode);
+  const groups = useStore(state => state.groups);
+
+  // Find the group this card belongs to (if any)
+  const cardGroup = card.groupId ? groups.find(g => g.id === card.groupId) : null;
+  const groupColor = cardGroup?.style?.color;
+  const cardIndicator = cardGroup?.style?.cardIndicator || 'none';
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
@@ -31,6 +37,11 @@ const Card = ({ card, zIndex = 1 }) => {
   const x = (card.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
   const y = (card.position?.y || 0) + ((transform?.y || 0) / zoomLevel);
 
+  // Apply border style for 'border' indicator
+  const borderStyle = cardIndicator === 'border' && groupColor
+    ? `3px solid ${groupColor}`
+    : undefined;
+
   const style = {
     position: 'absolute',
     left: x + 'px',
@@ -40,7 +51,8 @@ const Card = ({ card, zIndex = 1 }) => {
     cursor: interactionMode === 'hand' ? 'grab' : (isDragging ? 'grabbing' : 'move'),
     zIndex: isDragging ? 1000 : zIndex,
     transition: isDragging ? 'none' : 'left 0.2s, top 0.2s',
-    pointerEvents: interactionMode === 'hand' ? 'none' : 'auto'
+    pointerEvents: interactionMode === 'hand' ? 'none' : 'auto',
+    border: borderStyle,
   };
 
   // Handle resize
@@ -133,6 +145,57 @@ const Card = ({ card, zIndex = 1 }) => {
           />
         )}
       </div>
+
+      {/* Group indicators */}
+      {cardIndicator === 'dot' && groupColor && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            backgroundColor: groupColor,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            zIndex: 5,
+          }}
+          title={cardGroup?.name}
+        />
+      )}
+
+      {cardIndicator === 'banner' && groupColor && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            backgroundColor: groupColor,
+            borderTopLeftRadius: 'inherit',
+            borderTopRightRadius: 'inherit',
+            zIndex: 5,
+          }}
+          title={cardGroup?.name}
+        />
+      )}
+
+      {cardIndicator === 'tint' && groupColor && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: `${groupColor}22`,
+            pointerEvents: 'none',
+            borderRadius: 'inherit',
+            zIndex: 4,
+          }}
+        />
+      )}
 
       <button className="card-delete" onClick={handleDelete}>
         ✕

@@ -9,7 +9,7 @@ const useStore = create((set, get) => ({
   currentCardId: 0,
   currentTextFieldId: 0,
   editingTextField: null,
-  videoFiles: new Map(),
+  videoFiles: {}, // Using Object instead of Map for JSON serialization compatibility
   background: {
     color: '#2c3e50',
     image: null,
@@ -41,7 +41,16 @@ const useStore = create((set, get) => ({
   lastSavedFileName: null, // Track the name of the last saved file
   storageError: null,
   projectName: 'Untitled Presentation', // Default project name
-  notification: null, // { message, type: 'info' | 'success' | 'warning' }
+  notification: null, // { message, type: 'info' | 'success' | 'warning', id }
+  notificationTimeoutId: null, // Track timeout to prevent race conditions
+
+  // Groups (containers for organizing cards - can be Parts, Chapters, Sections, etc.)
+  groups: [],
+  currentGroupId: 0,
+  selectedGroupId: null,
+  groupsPanelOpen: false,
+  editingGroupId: null,
+  groupSettingsModalOpen: false,
 
   // Actions
   addCard: (cardData) => {
@@ -76,8 +85,7 @@ const useStore = create((set, get) => ({
 
   deleteCard: (cardId) => set((state) => {
     // Clean up video file reference
-    const newVideoFiles = new Map(state.videoFiles);
-    newVideoFiles.delete(cardId);
+    const { [cardId]: removed, ...newVideoFiles } = state.videoFiles;
 
     return {
       cards: state.cards.filter(card => card.id !== cardId),
@@ -147,11 +155,9 @@ const useStore = create((set, get) => ({
 
   setMaximizedCard: (cardId) => set({ maximizedCard: cardId }),
 
-  setVideoFile: (cardId, file) => set((state) => {
-    const newVideoFiles = new Map(state.videoFiles);
-    newVideoFiles.set(cardId, file);
-    return { videoFiles: newVideoFiles };
-  }),
+  setVideoFile: (cardId, file) => set((state) => ({
+    videoFiles: { ...state.videoFiles, [cardId]: file }
+  })),
 
   setProjectName: (name) => set({ projectName: name }),
 
@@ -160,11 +166,296 @@ const useStore = create((set, get) => ({
   setBackgroundMenuOpen: (isOpen) => set({ backgroundMenuOpen: isOpen }),
 
   setNotification: (notification) => {
-    set({ notification });
-    // Auto-clear after 3 seconds
-    if (notification) {
-      setTimeout(() => set({ notification: null }), 3000);
+    const state = get();
+
+    // Clear existing timeout to prevent race conditions
+    if (state.notificationTimeoutId) {
+      clearTimeout(state.notificationTimeoutId);
     }
+
+    if (notification) {
+      // Add unique ID to notification
+      const notificationWithId = { ...notification, id: Date.now() };
+
+      // Set new timeout and track it
+      const timeoutId = setTimeout(() => {
+        const currentState = get();
+        // Only clear if this is still the same notification
+        if (currentState.notification?.id === notificationWithId.id) {
+          set({ notification: null, notificationTimeoutId: null });
+        }
+      }, 3000);
+
+      set({ notification: notificationWithId, notificationTimeoutId: timeoutId });
+    } else {
+      set({ notification: null, notificationTimeoutId: null });
+    }
+  },
+
+  // ============================================================================
+  // GROUP ACTIONS
+  // ============================================================================
+
+  // Default color palette for groups
+  groupColors: [
+    '#3498db', // Blue
+    '#9b59b6', // Purple
+    '#27ae60', // Green
+    '#f39c12', // Orange
+    '#e74c3c', // Red
+    '#1abc9c', // Teal
+    '#e91e63', // Pink
+    '#00bcd4', // Cyan
+  ],
+
+  addGroup: (groupData = {}) => {
+    const state = get();
+    const colorIndex = state.groups.length % state.groupColors.length;
+
+    const newGroup = {
+      id: `group-${state.currentGroupId}`,
+      name: groupData.name || `Group ${state.groups.length + 1}`,
+      order: state.groups.length,
+      // Position on canvas
+      position: groupData.position || { x: 100 + (state.groups.length * 50), y: 100 },
+      size: groupData.size || { width: 600, height: 400 },
+      // Visual style (user configurable)
+      style: {
+        color: groupData.style?.color || state.groupColors[colorIndex],
+        showHeader: groupData.style?.showHeader ?? true,
+        showBoundary: groupData.style?.showBoundary ?? true,
+        boundaryStyle: groupData.style?.boundaryStyle || 'dashed', // 'solid' | 'dashed' | 'dotted' | 'none'
+        backgroundColor: groupData.style?.backgroundColor || null, // null = auto from color
+        backgroundOpacity: groupData.style?.backgroundOpacity ?? 0.05,
+        cardIndicator: groupData.style?.cardIndicator || 'dot', // 'dot' | 'border' | 'banner' | 'tint' | 'none'
+      },
+      // Layout within this group
+      innerLayout: groupData.innerLayout || 'free', // 'free' | 'grid' | 'line' | 'circle'
+      collapsed: false,
+      timestamp: Date.now(),
+    };
+
+    set({
+      groups: [...state.groups, newGroup],
+      currentGroupId: state.currentGroupId + 1,
+    });
+
+    return newGroup;
+  },
+
+  updateGroup: (groupId, updates) => set((state) => ({
+    groups: state.groups.map(group =>
+      group.id === groupId ? { ...group, ...updates } : group
+    )
+  })),
+
+  deleteGroup: (groupId) => set((state) => {
+    // Remove group and unassign all cards from this group
+    const updatedCards = state.cards.map(card =>
+      card.groupId === groupId ? { ...card, groupId: null } : card
+    );
+
+    return {
+      groups: state.groups.filter(g => g.id !== groupId),
+      cards: updatedCards,
+      selectedGroupId: state.selectedGroupId === groupId ? null : state.selectedGroupId,
+    };
+  }),
+
+  reorderGroups: (fromIndex, toIndex) => set((state) => {
+    const newGroups = [...state.groups];
+    const [removed] = newGroups.splice(fromIndex, 1);
+    newGroups.splice(toIndex, 0, removed);
+
+    // Update order property
+    return {
+      groups: newGroups.map((group, index) => ({ ...group, order: index }))
+    };
+  }),
+
+  setSelectedGroupId: (groupId) => set({ selectedGroupId: groupId }),
+
+  setGroupsPanelOpen: (isOpen) => set({ groupsPanelOpen: isOpen }),
+
+  setEditingGroupId: (groupId) => set({ editingGroupId: groupId }),
+
+  setGroupSettingsModalOpen: (isOpen) => set({ groupSettingsModalOpen: isOpen }),
+
+  // Assign a card to a group
+  assignCardToGroup: (cardId, groupId) => set((state) => ({
+    cards: state.cards.map(card =>
+      card.id === cardId ? { ...card, groupId } : card
+    )
+  })),
+
+  // Remove card from its group (make it ungrouped)
+  removeCardFromGroup: (cardId) => set((state) => ({
+    cards: state.cards.map(card =>
+      card.id === cardId ? { ...card, groupId: null } : card
+    )
+  })),
+
+  // Get cards belonging to a specific group
+  getCardsInGroup: (groupId) => {
+    const state = get();
+    return state.cards.filter(card => card.groupId === groupId);
+  },
+
+  // Get ungrouped cards
+  getUngroupedCards: () => {
+    const state = get();
+    return state.cards.filter(card => !card.groupId);
+  },
+
+  // Arrange cards within a specific group using the group's inner layout
+  arrangeCardsInGroup: (groupId, layoutType = null) => {
+    const state = get();
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    const groupCards = state.cards.filter(c => c.groupId === groupId);
+    if (groupCards.length === 0) return;
+
+    const layout = layoutType || group.innerLayout || 'grid';
+    const padding = 20;
+    const headerHeight = group.style.showHeader ? 40 : 0;
+
+    // Available space within group bounds
+    const availableWidth = group.size.width - padding * 2;
+    const availableHeight = group.size.height - padding * 2 - headerHeight;
+    const startX = group.position.x + padding;
+    const startY = group.position.y + padding + headerHeight;
+
+    let updatedCards = [...state.cards];
+
+    switch (layout) {
+      case 'grid': {
+        const cols = Math.ceil(Math.sqrt(groupCards.length));
+        const cardWidth = Math.min(200, (availableWidth - (cols - 1) * 20) / cols);
+        const cardHeight = cardWidth * 0.67; // Maintain aspect ratio
+
+        groupCards.forEach((card, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          const x = startX + col * (cardWidth + 20);
+          const y = startY + row * (cardHeight + 20);
+
+          updatedCards = updatedCards.map(c =>
+            c.id === card.id
+              ? { ...c, position: { x, y }, size: { width: cardWidth, height: cardHeight } }
+              : c
+          );
+        });
+        break;
+      }
+
+      case 'line': {
+        const cardWidth = Math.min(200, (availableWidth - (groupCards.length - 1) * 20) / groupCards.length);
+        const cardHeight = cardWidth * 0.67;
+
+        groupCards.forEach((card, index) => {
+          const x = startX + index * (cardWidth + 20);
+          const y = startY + (availableHeight - cardHeight) / 2;
+
+          updatedCards = updatedCards.map(c =>
+            c.id === card.id
+              ? { ...c, position: { x, y }, size: { width: cardWidth, height: cardHeight } }
+              : c
+          );
+        });
+        break;
+      }
+
+      case 'circle': {
+        const centerX = startX + availableWidth / 2;
+        const centerY = startY + availableHeight / 2;
+        const radius = Math.min(availableWidth, availableHeight) / 2 - 60;
+        const cardSize = Math.min(120, radius * 0.6);
+
+        groupCards.forEach((card, index) => {
+          const angle = (index / groupCards.length) * Math.PI * 2 - Math.PI / 2;
+          const x = centerX + radius * Math.cos(angle) - cardSize / 2;
+          const y = centerY + radius * Math.sin(angle) - cardSize * 0.67 / 2;
+
+          updatedCards = updatedCards.map(c =>
+            c.id === card.id
+              ? { ...c, position: { x, y }, size: { width: cardSize, height: cardSize * 0.67 } }
+              : c
+          );
+        });
+        break;
+      }
+
+      case 'free':
+      default:
+        // Don't rearrange, just ensure cards are within bounds
+        break;
+    }
+
+    set({ cards: updatedCards });
+
+    // Update group's inner layout setting
+    if (layoutType) {
+      get().updateGroup(groupId, { innerLayout: layoutType });
+    }
+  },
+
+  // Auto-resize group to fit its cards
+  autoResizeGroup: (groupId) => {
+    const state = get();
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    const groupCards = state.cards.filter(c => c.groupId === groupId);
+    if (groupCards.length === 0) return;
+
+    const padding = 30;
+    const headerHeight = group.style.showHeader ? 50 : 10;
+
+    // Calculate bounding box of all cards
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    groupCards.forEach(card => {
+      const cardX = card.position?.x || 0;
+      const cardY = card.position?.y || 0;
+      const cardW = card.size?.width || 200;
+      const cardH = card.size?.height || 150;
+
+      minX = Math.min(minX, cardX);
+      minY = Math.min(minY, cardY);
+      maxX = Math.max(maxX, cardX + cardW);
+      maxY = Math.max(maxY, cardY + cardH);
+    });
+
+    const newPosition = {
+      x: minX - padding,
+      y: minY - padding - headerHeight,
+    };
+    const newSize = {
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2 + headerHeight,
+    };
+
+    get().updateGroup(groupId, { position: newPosition, size: newSize });
+  },
+
+  // Navigate/pan to a specific group
+  panToGroup: (groupId) => {
+    const state = get();
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return;
+
+    // Center the view on the group
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight - 60; // Account for toolbar
+
+    const groupCenterX = group.position.x + group.size.width / 2;
+    const groupCenterY = group.position.y + group.size.height / 2;
+
+    const panX = viewportWidth / 2 - groupCenterX * state.zoomLevel;
+    const panY = viewportHeight / 2 - groupCenterY * state.zoomLevel;
+
+    set({ panX, panY, selectedGroupId: groupId });
   },
 
   // Utility: Calculate optimal card size to prevent overlap
@@ -512,6 +803,7 @@ const useStore = create((set, get) => ({
           mediaSrc: card.mediaType === 'video' ? null : card.mediaSrc
         })),
         textFields: state.textFields,
+        groups: state.groups, // Save groups
         zoomLevel: state.zoomLevel,
         panX: state.panX,
         panY: state.panY,
@@ -542,17 +834,30 @@ const useStore = create((set, get) => ({
       const data = await loadPresentation('current');
 
       if (data) {
+        // Calculate max IDs from existing items to prevent ID collisions after deletions
+        const maxCardId = data.cards?.length > 0
+          ? Math.max(...data.cards.map(c => parseInt(c.id.replace('card-', ''), 10) || 0)) + 1
+          : 0;
+        const maxTextFieldId = data.textFields?.length > 0
+          ? Math.max(...data.textFields.map(t => parseInt(t.id.replace('text-', ''), 10) || 0)) + 1
+          : 0;
+        const maxGroupId = data.groups?.length > 0
+          ? Math.max(...data.groups.map(g => parseInt(g.id.replace('group-', ''), 10) || 0)) + 1
+          : 0;
+
         set({
           cards: data.cards || [],
           textFields: data.textFields || [],
+          groups: data.groups || [],
           background: data.background || { color: '#2c3e50', image: null },
           zoomLevel: data.zoomLevel || 1,
           panX: data.panX || 0,
           panY: data.panY || 0,
           activeLayout: data.activeLayout || null,
           layoutSettings: data.layoutSettings || { strokeWidth: 4, color: 'rgba(0, 255, 255, 0.8)' },
-          currentCardId: (data.cards?.length || 0),
-          currentTextFieldId: (data.textFields?.length || 0)
+          currentCardId: maxCardId,
+          currentTextFieldId: maxTextFieldId,
+          currentGroupId: maxGroupId,
         });
 
         return true;
@@ -568,14 +873,17 @@ const useStore = create((set, get) => ({
   clearAll: () => set({
     cards: [],
     textFields: [],
+    groups: [],
     currentCardId: 0,
     currentTextFieldId: 0,
-    videoFiles: new Map(),
+    currentGroupId: 0,
+    videoFiles: {},
     background: { color: '#2c3e50', image: null },
     zoomLevel: 1,
     panX: 0,
     panY: 0,
     maximizedCard: null,
+    selectedGroupId: null,
     lastSaved: null,
     lastSavedFileName: null,
     storageError: null
