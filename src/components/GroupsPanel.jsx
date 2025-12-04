@@ -109,21 +109,39 @@ const GroupsPanel = () => {
               <h3 style={{ margin: 0, color: '#e0e0e0', fontSize: 16, fontWeight: 600 }}>
                 Groups
               </h3>
-              <button
-                onClick={() => setIsAddingGroup(true)}
-                style={{
-                  background: colors.primary,
-                  border: 'none',
-                  borderRadius: borderRadius.sm,
-                  padding: '4px 12px',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: 500,
-                }}
-              >
-                + Add
-              </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  onClick={() => setIsAddingGroup(true)}
+                  style={{
+                    background: colors.primary,
+                    border: 'none',
+                    borderRadius: borderRadius.sm,
+                    padding: '4px 12px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 500,
+                  }}
+                >
+                  + Add
+                </button>
+                <button
+                  onClick={() => setGroupsPanelOpen(false)}
+                  title="Close panel"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: borderRadius.sm,
+                    padding: '4px 8px',
+                    color: '#888',
+                    cursor: 'pointer',
+                    fontSize: 18,
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {/* Add Group Input */}

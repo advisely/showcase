@@ -1,8 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import useStore from '../store/useStore';
 
 const SaveMenu = ({ isOpen, onClose, onSave, onSaveAs, buttonRef }) => {
   const menuRef = useRef(null);
+  const autoSaveEnabled = useStore(state => state.autoSaveEnabled);
+  const setAutoSaveEnabled = useStore(state => state.setAutoSaveEnabled);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -77,6 +80,47 @@ const SaveMenu = ({ isOpen, onClose, onSave, onSaveAs, buttonRef }) => {
               <div className="save-menu-desc">Choose new name</div>
             </div>
           </motion.button>
+
+          <div className="save-menu-divider" />
+
+          {/* Auto-Save Toggle */}
+          <div
+            className="save-menu-item"
+            onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="save-menu-icon">{autoSaveEnabled ? '🔄' : '⏸️'}</span>
+            <div className="save-menu-text" style={{ flex: 1 }}>
+              <div className="save-menu-title">Auto-Save</div>
+              <div className="save-menu-desc">{autoSaveEnabled ? 'Enabled' : 'Disabled'}</div>
+            </div>
+            {/* Toggle Switch */}
+            <div
+              style={{
+                width: 40,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: autoSaveEnabled ? '#27ae60' : '#555',
+                position: 'relative',
+                transition: 'background-color 0.2s',
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  backgroundColor: 'white',
+                  position: 'absolute',
+                  top: 2,
+                  left: autoSaveEnabled ? 20 : 2,
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }}
+              />
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

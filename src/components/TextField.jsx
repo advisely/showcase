@@ -69,9 +69,17 @@ const TextField = ({ textField, zIndex }) => {
     saveToStorage();
   };
 
-  // Calculate real-time position during drag, compensating for playfield zoom
-  const x = (textField.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
-  const y = (textField.position?.y || 0) + ((transform?.y || 0) / zoomLevel);
+  // Base position (canvas coordinates)
+  const baseX = textField.position?.x || 0;
+  const baseY = textField.position?.y || 0;
+
+  // Drag offset needs to be scaled down to canvas coordinates for proper cursor tracking
+  // When parent is scaled by zoomLevel, moving X screen pixels requires X/zoomLevel canvas pixels
+  const dragOffsetX = (transform?.x || 0) / zoomLevel;
+  const dragOffsetY = (transform?.y || 0) / zoomLevel;
+
+  const x = baseX + dragOffsetX;
+  const y = baseY + dragOffsetY;
 
   const style = {
     position: 'absolute',

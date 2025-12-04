@@ -41,6 +41,7 @@ const useStore = create((set, get) => ({
   lastSavedFileName: null, // Track the name of the last saved file
   storageError: null,
   projectName: 'Untitled Presentation', // Default project name
+  autoSaveEnabled: true, // Toggle for auto-save functionality
   notification: null, // { message, type: 'info' | 'success' | 'warning', id }
   notificationTimeoutId: null, // Track timeout to prevent race conditions
 
@@ -218,7 +219,7 @@ const useStore = create((set, get) => ({
       order: state.groups.length,
       // Position on canvas
       position: groupData.position || { x: 100 + (state.groups.length * 50), y: 100 },
-      size: groupData.size || { width: 600, height: 400 },
+      size: groupData.size || { width: 300, height: 250 }, // Collapsed size (doubles when expanded)
       // Visual style (user configurable)
       style: {
         color: groupData.style?.color || state.groupColors[colorIndex],
@@ -226,7 +227,7 @@ const useStore = create((set, get) => ({
         showBoundary: groupData.style?.showBoundary ?? true,
         boundaryStyle: groupData.style?.boundaryStyle || 'dashed', // 'solid' | 'dashed' | 'dotted' | 'none'
         backgroundColor: groupData.style?.backgroundColor || null, // null = auto from color
-        backgroundOpacity: groupData.style?.backgroundOpacity ?? 0.05,
+        backgroundOpacity: groupData.style?.backgroundOpacity ?? 0.2,
         cardIndicator: groupData.style?.cardIndicator || 'dot', // 'dot' | 'border' | 'banner' | 'tint' | 'none'
       },
       // Layout within this group
@@ -313,18 +314,116 @@ const useStore = create((set, get) => ({
   setGroupSettingsModalOpen: (isOpen) => set({ groupSettingsModalOpen: isOpen }),
 
   // Toggle group expanded state (thumbnail view vs full-size cards)
-  toggleGroupExpanded: (groupId) => set((state) => ({
-    groups: state.groups.map(group =>
-      group.id === groupId ? { ...group, expanded: !group.expanded } : group
-    )
-  })),
+  // When expanding: double the group size and arrange cards in a grid inside
+  // When collapsing: halve the group size back
+  toggleGroupExpanded: (groupId) => set((state) => {
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return state;
+
+    const isExpanding = !group.expanded;
+    const sizeMultiplier = isExpanding ? 2 : 0.5;
+
+    // Calculate new group size
+    const newGroupSize = {
+      width: group.size.width * sizeMultiplier,
+      height: group.size.height * sizeMultiplier
+    };
+
+    // If expanding, arrange cards inside the group bounds
+    let updatedCards = state.cards;
+    if (isExpanding) {
+      const groupCards = state.cards.filter(c => c.groupId === groupId);
+      if (groupCards.length > 0) {
+        const padding = 20;
+        const headerHeight = group.style?.showHeader ? 50 : 10;
+        const spacing = 20;
+
+        // Calculate available space in expanded group
+        const availableWidth = newGroupSize.width - padding * 2;
+
+        // Calculate optimal grid layout
+        const cardCount = groupCards.length;
+        const cols = Math.ceil(Math.sqrt(cardCount));
+
+        // Calculate card size to fit in grid with spacing
+        const cardWidth = Math.min(250, (availableWidth - (cols - 1) * spacing) / cols);
+        const cardHeight = cardWidth * 0.67; // Maintain aspect ratio
+
+        // Position each card in the grid
+        updatedCards = state.cards.map(card => {
+          if (card.groupId !== groupId) return card;
+
+          const cardIndex = groupCards.findIndex(c => c.id === card.id);
+          const col = cardIndex % cols;
+          const row = Math.floor(cardIndex / cols);
+
+          return {
+            ...card,
+            position: {
+              x: group.position.x + padding + col * (cardWidth + spacing),
+              y: group.position.y + headerHeight + padding + row * (cardHeight + spacing)
+            },
+            size: {
+              width: cardWidth,
+              height: cardHeight
+            }
+          };
+        });
+      }
+    }
+
+    return {
+      cards: updatedCards,
+      groups: state.groups.map(g =>
+        g.id === groupId
+          ? {
+              ...g,
+              expanded: !g.expanded,
+              size: newGroupSize
+            }
+          : g
+      )
+    };
+  }),
 
   // Assign a card to a group
-  assignCardToGroup: (cardId, groupId) => set((state) => ({
-    cards: state.cards.map(card =>
-      card.id === cardId ? { ...card, groupId } : card
-    )
-  })),
+  // Card becomes a thumbnail icon inside the group (group stays collapsed)
+  assignCardToGroup: (cardId, groupId) => set((state) => {
+    const group = state.groups.find(g => g.id === groupId);
+    if (!group) return state;
+
+    // Position the card inside the group bounds for when it expands
+    const existingGroupCards = state.cards.filter(c => c.groupId === groupId);
+    const cardIndex = existingGroupCards.length;
+
+    // Calculate position within group (grid layout when expanded)
+    const padding = 20;
+    const headerHeight = group.style?.showHeader ? 40 : 0;
+    const cardWidth = 200;
+    const cardHeight = 150;
+    const cols = 3;
+    const col = cardIndex % cols;
+    const row = Math.floor(cardIndex / cols);
+
+    const newPosition = {
+      x: group.position.x + padding + col * (cardWidth + 20),
+      y: group.position.y + headerHeight + padding + row * (cardHeight + 20)
+    };
+
+    return {
+      cards: state.cards.map(c =>
+        c.id === cardId
+          ? { ...c, groupId, position: newPosition }
+          : c
+      ),
+      // Ensure group is collapsed when adding cards (shows thumbnails)
+      groups: state.groups.map(g =>
+        g.id === groupId && g.expanded
+          ? { ...g, expanded: false, size: { width: g.size.width / 2, height: g.size.height / 2 } }
+          : g
+      )
+    };
+  }),
 
   // Remove card from its group (make it ungrouped)
   removeCardFromGroup: (cardId) => set((state) => ({
@@ -826,11 +925,24 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // Save/Load functionality
-  saveToStorage: debounce(async (customFileName = null) => {
-    const state = get();
+  // Toggle auto-save
+  setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
 
-    set({ isSaving: true, storageError: null });
+  // Save/Load functionality
+  // Uses debounce to prevent excessive saves; silent mode prevents UI flickering during drag
+  saveToStorage: debounce(async (customFileName = null, options = {}) => {
+    const state = get();
+    const isAutoSave = !customFileName && !options.force;
+
+    // Skip auto-save if disabled
+    if (isAutoSave && !state.autoSaveEnabled) {
+      return;
+    }
+
+    // Only show saving indicator for explicit saves (not auto-saves) to prevent flickering
+    if (!isAutoSave) {
+      set({ isSaving: true, storageError: null });
+    }
 
     try {
       const data = {
@@ -852,12 +964,21 @@ const useStore = create((set, get) => ({
 
       await savePresentation('current', data);
 
-      set({
-        isSaving: false,
-        lastSaved: Date.now(),
-        lastSavedFileName: customFileName || 'Auto Save',
-        storageError: null
-      });
+      // Update last saved time (silently for auto-saves)
+      if (isAutoSave) {
+        set({
+          lastSaved: Date.now(),
+          lastSavedFileName: 'Auto Save',
+          storageError: null
+        });
+      } else {
+        set({
+          isSaving: false,
+          lastSaved: Date.now(),
+          lastSavedFileName: customFileName || 'Manual Save',
+          storageError: null
+        });
+      }
     } catch (error) {
       console.error('Save failed:', error);
       set({
@@ -883,10 +1004,45 @@ const useStore = create((set, get) => ({
           ? Math.max(...data.groups.map(g => parseInt(g.id.replace('group-', ''), 10) || 0)) + 1
           : 0;
 
+        // Rearrange cards for any expanded groups to ensure they fit inside
+        let cards = data.cards || [];
+        const groups = data.groups || [];
+
+        groups.forEach(group => {
+          if (group.expanded) {
+            const groupCards = cards.filter(c => c.groupId === group.id);
+            if (groupCards.length > 0) {
+              const padding = 20;
+              const headerHeight = group.style?.showHeader ? 50 : 10;
+              const spacing = 20;
+              const availableWidth = group.size.width - padding * 2;
+              const cardCount = groupCards.length;
+              const cols = Math.ceil(Math.sqrt(cardCount));
+              const cardWidth = Math.min(250, (availableWidth - (cols - 1) * spacing) / cols);
+              const cardHeight = cardWidth * 0.67;
+
+              cards = cards.map(card => {
+                if (card.groupId !== group.id) return card;
+                const cardIndex = groupCards.findIndex(c => c.id === card.id);
+                const col = cardIndex % cols;
+                const row = Math.floor(cardIndex / cols);
+                return {
+                  ...card,
+                  position: {
+                    x: group.position.x + padding + col * (cardWidth + spacing),
+                    y: group.position.y + headerHeight + padding + row * (cardHeight + spacing)
+                  },
+                  size: { width: cardWidth, height: cardHeight }
+                };
+              });
+            }
+          }
+        });
+
         set({
-          cards: data.cards || [],
+          cards,
           textFields: data.textFields || [],
-          groups: data.groups || [],
+          groups,
           background: data.background || { color: '#2c3e50', image: null },
           zoomLevel: data.zoomLevel || 1,
           panX: data.panX || 0,

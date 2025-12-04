@@ -122,6 +122,83 @@ autoResizeGroup, panToGroup
 
 ---
 
+## 🎬 Fullscreen Card Navigation (v2.3.1)
+
+> **Goal:** Seamlessly browse through cards in a group during fullscreen view
+
+### ✅ Implemented Features
+
+#### Navigation Controls
+- **Arrow Buttons** - Left (‹) and right (›) buttons on screen edges
+- **Keyboard Support** - ← → arrow keys to navigate, ESC to close
+- **Smart Visibility** - Left arrow hidden on first card, right hidden on last
+- **Glass-effect Design** - Frosted glass buttons with purple gradient on hover
+
+#### Visual Feedback
+- **Group Name Display** - Shows current group name
+- **Card Counter** - Shows position (e.g., "2 / 5")
+- **Smooth Transitions** - Animated button entrance with Framer Motion
+- **Zoom Hint** - Updated to show navigation tip when applicable
+
+#### Auto-Arrange on Expand
+- **Grid Layout** - Cards auto-arrange in grid when group expands
+- **Responsive Sizing** - Cards resize to fit group (max 250px width)
+- **Load Support** - Already-expanded groups rearrange on page load
+- **Aspect Ratio** - Cards maintain 3:2 ratio
+
+### Technical Implementation
+
+**Modified Files:**
+- `src/components/MaximizedView.jsx` - Navigation arrows and keyboard handling
+- `src/store/useStore.js` - toggleGroupExpanded with card arrangement, loadFromStorage fix
+
+**Key Code:**
+```javascript
+// Navigation handlers with useCallback for performance
+const goToPrev = useCallback(() => {
+  if (hasPrev) {
+    setMaximizedCard(groupCards[currentIndex - 1].id);
+    setScale(1);
+  }
+}, [hasPrev, groupCards, currentIndex]);
+
+// Keyboard navigation in useEffect
+const handleKeyDown = (e) => {
+  if (e.key === 'ArrowLeft') goToPrev();
+  else if (e.key === 'ArrowRight') goToNext();
+  else if (e.key === 'Escape') handleClose();
+};
+```
+
+---
+
+## 🔧 Bug Fixes & Performance (v2.3.1)
+
+### Auto-Save Flickering Fix
+- **Issue:** Dragging caused UI flickering due to auto-save updating `isSaving` state
+- **Fix:** Made auto-saves "silent" - only manual saves show indicator
+- **Added:** Auto-Save ON/OFF toggle in Save menu
+
+### Drag Distance Limit Fix
+- **Issue:** Groups/cards reset position after dragging beyond a certain distance
+- **Fix:** Changed from PointerSensor to MouseSensor + TouchSensor
+- **Added:** `autoScroll={false}` on DndContext
+
+### Drag Cursor Tracking Fix
+- **Issue:** Mouse pointer drifted away from element during drag
+- **Fix:** Proper zoom compensation: `dragOffset = transform / zoomLevel`
+
+### Expanded Groups Z-Index Fix
+- **Issue:** Expanded groups appeared behind collapsed groups
+- **Fix:** Tiered z-index system:
+  - Collapsed groups: 1-99
+  - Expanded groups: 100+
+  - Cards: 200+
+  - Text fields: 300+
+  - Dragging element: 1000
+
+---
+
 ## 🚀 Phase 1: Visual Elements (Weeks 1-4)
 
 > **Goal:** Rich visual toolset for design and composition

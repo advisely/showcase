@@ -37,9 +37,14 @@ const Card = ({ card, zIndex = 1 }) => {
     disabled: interactionMode === 'hand' // Disable dragging in hand mode
   });
 
-  // Calculate real-time position during drag, compensating for playfield zoom
-  const x = (card.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
-  const y = (card.position?.y || 0) + ((transform?.y || 0) / zoomLevel);
+  // Base position (canvas coordinates)
+  const baseX = card.position?.x || 0;
+  const baseY = card.position?.y || 0;
+
+  // Drag offset needs to be scaled down to canvas coordinates for proper cursor tracking
+  // When parent is scaled by zoomLevel, moving X screen pixels requires X/zoomLevel canvas pixels
+  const dragOffsetX = (transform?.x || 0) / zoomLevel;
+  const dragOffsetY = (transform?.y || 0) / zoomLevel;
 
   // Apply border style for 'border' indicator
   const borderStyle = cardIndicator === 'border' && groupColor
@@ -48,8 +53,8 @@ const Card = ({ card, zIndex = 1 }) => {
 
   const style = {
     position: 'absolute',
-    left: x + 'px',
-    top: y + 'px',
+    left: (baseX + dragOffsetX) + 'px',
+    top: (baseY + dragOffsetY) + 'px',
     width: size.width + 'px',
     height: size.height + 'px',
     cursor: interactionMode === 'hand' ? 'grab' : (isDragging ? 'grabbing' : 'move'),

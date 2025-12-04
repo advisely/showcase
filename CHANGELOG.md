@@ -1,5 +1,56 @@
 # Changelog
 
+## [2.3.1] - 2025-12-04
+
+### 🎯 Group Enhancements
+
+- **Expanded Group Card Layout** - When expanding a group, cards now auto-arrange in a neat grid
+  - Cards resize to fit inside group bounds (max 250px width)
+  - Proper spacing and padding between cards
+  - Cards maintain aspect ratio
+  - Works on both toggle expand and page load
+
+- **Expanded Groups Z-Index** - Fixed expanded groups appearing behind collapsed ones
+  - Expanded groups now render above collapsed groups
+  - Cards inside expanded groups layer correctly (z-index 200+)
+  - Text fields layer above cards (z-index 300+)
+
+- **Group Navigation in Fullscreen** - Navigate between cards in the same group
+  - Left/right arrow buttons appear on screen edges
+  - Keyboard navigation: ← → arrows to navigate, ESC to close
+  - Group name and card counter displayed (e.g., "Part 1: Intro • 2 / 5")
+  - Arrows hidden when at first/last card
+  - Glass-effect buttons with purple hover gradient
+
+### ✨ Auto-Save Improvements
+
+- **Silent Auto-Save** - Auto-saves no longer cause UI flickering during drag
+  - Saving indicator only shows for manual saves
+  - Drag operations remain smooth at 60fps
+
+- **Auto-Save Toggle** - Added ON/OFF switch in Save menu
+  - Toggle auto-save without reloading
+  - Visual toggle switch with status indicator
+  - Setting persists across sessions
+
+### 🐛 Bug Fixes
+
+- **Drag Distance Limit** - Fixed groups/cards resetting after dragging too far
+  - Switched from PointerSensor to MouseSensor for reliable long-distance dragging
+  - Added TouchSensor for mobile support
+  - Disabled autoScroll to prevent position jumps
+
+- **Drag Cursor Tracking** - Fixed mouse pointer drifting away from element during drag
+  - Proper zoom compensation for scaled canvas
+  - Cursor now stays aligned with dragged element
+  - Applies to cards, groups, and text fields
+
+- **Expanded Group Load** - Cards now arrange correctly when loading saved expanded groups
+  - Previously, cards would overlap if group was saved in expanded state
+  - Now auto-rearranges on load to fit inside group bounds
+
+---
+
 ## [2.1.1] - 2024-11-12
 
 ### 🎯 UX Improvements

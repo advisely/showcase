@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
-import { DndContext, useSensor, useSensors, PointerSensor, DragOverlay } from '@dnd-kit/core';
+import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import throttle from 'lodash.throttle';
 import useStore from '../store/useStore';
 import Card from './Card';
@@ -32,11 +32,18 @@ const Playfield = () => {
   const setZoom = useStore(state => state.setZoom);
   const saveToStorage = useStore(state => state.saveToStorage);
 
-  // Only enable drag sensors in cursor mode
+  // Use MouseSensor for reliable long-distance dragging (doesn't lose pointer like PointerSensor)
+  // Also add TouchSensor for mobile support
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 5, // 5px of movement required before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100,
+        tolerance: 5,
       },
     })
   );
@@ -303,6 +310,7 @@ const Playfield = () => {
   };
 
   // Sort groups by order for consistent z-index layering
+  // Expanded groups get higher z-index to appear on top
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
 
   // Filter cards: hide cards that are in non-expanded groups (they show as thumbnails inside the group)
@@ -323,15 +331,22 @@ const Playfield = () => {
     >
       <LayoutGuides />
       {/* Render groups first (behind cards) */}
+      {/* Expanded groups get zIndex boost (100+) to appear above collapsed groups */}
       {sortedGroups.map((group, index) => (
-        <GroupContainer key={group.id} group={group} zIndex={index + 1} />
+        <GroupContainer
+          key={group.id}
+          group={group}
+          zIndex={group.expanded ? 100 + index : index + 1}
+        />
       ))}
       {/* Cards render above groups - only visible/expanded cards */}
+      {/* Cards from expanded groups get higher zIndex (200+) to appear above expanded group containers */}
       {visibleCards.map((card, index) => (
-        <Card key={card.id} card={card} zIndex={groups.length + index + 1} />
+        <Card key={card.id} card={card} zIndex={200 + index} />
       ))}
+      {/* Text fields above cards */}
       {textFields.map((textField, index) => (
-        <TextField key={textField.id} textField={textField} zIndex={groups.length + cards.length + index + 1} />
+        <TextField key={textField.id} textField={textField} zIndex={300 + index} />
       ))}
     </div>
   );
@@ -382,7 +397,11 @@ const Playfield = () => {
         </div>
       )}
       {isDndEnabled ? (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          autoScroll={false}
+        >
           {playfieldContent}
         </DndContext>
       ) : (

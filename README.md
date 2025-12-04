@@ -2,7 +2,7 @@
 
 > Transform your ideas into stunning visual presentations with drag-and-drop simplicity and professional polish.
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)
 ![React](https://img.shields.io/badge/React-19-61dafb.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -396,6 +396,12 @@ This shouldn't happen! If it does:
 ## 🗺️ Roadmap
 
 ### Recently Added ✅
+- [x] 📑 **Groups & Organization** - Create Parts, Chapters, Sections
+- [x] 🗂️ **Thumbnail & Expanded Views** - Toggle between compact and full-size cards
+- [x] 🔄 **Auto-arrange on Expand** - Cards layout in grid when group expands
+- [x] ◀️▶️ **Fullscreen Navigation** - Browse cards in same group with arrows
+- [x] ⌨️ **Keyboard Navigation** - Arrow keys in fullscreen view
+- [x] 💾 **Auto-Save Toggle** - Enable/disable in Save menu
 - [x] ✍️ **Text fields with full typography control**
 - [x] 🎨 **20 color presets + custom color picker**
 - [x] 📝 **Click-to-edit text properties**

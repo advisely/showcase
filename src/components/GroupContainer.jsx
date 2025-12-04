@@ -54,13 +54,23 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
     setDroppableRef(node);
   };
 
-  // Calculate position with drag transform
-  const x = (group.position?.x || 0) + ((transform?.x || 0) / zoomLevel);
-  const y = (group.position?.y || 0) + ((transform?.y || 0) / zoomLevel);
+  // Base position (canvas coordinates)
+  const baseX = group.position?.x || 0;
+  const baseY = group.position?.y || 0;
+
+  // Drag offset needs to be scaled down to canvas coordinates for proper cursor tracking
+  // When parent is scaled by zoomLevel, moving X screen pixels requires X/zoomLevel canvas pixels
+  const dragOffsetX = (transform?.x || 0) / zoomLevel;
+  const dragOffsetY = (transform?.y || 0) / zoomLevel;
+
+  const x = baseX + dragOffsetX;
+  const y = baseY + dragOffsetY;
 
   // Style based on group settings
   const { style } = group;
-  const bgColor = style.backgroundColor || `${style.color}${Math.round(style.backgroundOpacity * 255).toString(16).padStart(2, '0')}`;
+  // Use 20% opacity for semi-transparent blurry background
+  const bgOpacity = style.backgroundOpacity ?? 0.2;
+  const bgColor = style.backgroundColor || `${style.color}${Math.round(bgOpacity * 255).toString(16).padStart(2, '0')}`;
 
   // Handle resize
   useEffect(() => {
@@ -113,7 +123,16 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
 
   const handleSelect = (e) => {
     e.stopPropagation();
+    // If clicking on the body area (not header), expand the group
+    // Header clicks are handled by the header's own drag listeners
     setSelectedGroupId(isSelected ? null : group.id);
+  };
+
+  // Single click on group body to toggle expand/collapse
+  const handleBodyClick = (e) => {
+    e.stopPropagation();
+    toggleGroupExpanded(group.id);
+    saveToStorage();
   };
 
   const handleDoubleClick = (e) => {
@@ -275,6 +294,8 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
         width: group.size.width,
         height: group.size.height,
         backgroundColor: isOver ? `${style.color}22` : bgColor,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         border: isOver ? `3px solid ${style.color}` : getBorderStyle(),
         borderRadius: borderRadius.lg,
         zIndex: zIndex + (isDragging ? 1000 : 0),
@@ -390,6 +411,7 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
       {/* Thumbnail grid when not expanded */}
       {!isExpanded && cardCount > 0 && (
         <div
+          onClick={handleBodyClick}
           onDoubleClick={handleBodyDoubleClick}
           style={{
             display: 'grid',
@@ -446,6 +468,7 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
       {/* Hint text when expanded (cards shown separately on canvas) */}
       {isExpanded && cardCount > 0 && (
         <div
+          onClick={handleBodyClick}
           onDoubleClick={handleBodyDoubleClick}
           style={{
             display: 'flex',
@@ -457,7 +480,7 @@ const GroupContainer = ({ group, zIndex = 1 }) => {
             cursor: 'pointer',
           }}
         >
-          Double-click to collapse • {cardCount} cards expanded on canvas
+          Click to collapse • {cardCount} cards expanded on canvas
         </div>
       )}
 
