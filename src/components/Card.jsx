@@ -25,6 +25,7 @@ const Card = ({ card, zIndex = 1 }) => {
   const assignCardToGroup = useStore(state => state.assignCardToGroup);
   const removeCardFromGroup = useStore(state => state.removeCardFromGroup);
   const setNotification = useStore(state => state.setNotification);
+  const cardAnimationSpeed = useStore(state => state.cardAnimationSpeed);
 
   // Find the group this card belongs to (if any)
   const cardGroup = card.groupId ? groups.find(g => g.id === card.groupId) : null;
@@ -163,10 +164,24 @@ const Card = ({ card, zIndex = 1 }) => {
       ref={setNodeRef}
       style={style}
       className={`card ${card.orientation}`}
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      initial={{ scale: 0.5, opacity: 0, rotate: -5 }}
+      animate={{
+        scale: 1,
+        opacity: 1,
+        rotate: 0,
+        transition: {
+          type: 'spring',
+          stiffness: 400 * (cardAnimationSpeed || 1),
+          damping: 25,
+          mass: 0.8 / (cardAnimationSpeed || 1)
+        }
+      }}
+      exit={{
+        scale: 0.3,
+        opacity: 0,
+        rotate: 5,
+        transition: { duration: 0.2 / (cardAnimationSpeed || 1), ease: 'easeIn' }
+      }}
       whileHover={{ boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}
       {...listeners}
       {...attributes}

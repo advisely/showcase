@@ -1,5 +1,53 @@
 # Changelog
 
+## [2.4.0] - 2025-12-04
+
+### 📝 Presentation Management
+
+- **Editable Presentation Name** - Click the title field in toolbar to rename
+  - Press Enter or blur to save the name
+  - Press Escape to discard changes
+  - Name persists across sessions and exports
+
+- **Fullscreen Presentation Mode** - Clean, distraction-free view
+  - All toolbar buttons hidden except exit button
+  - Presentation title centered in toolbar
+  - Click fullscreen button again to exit
+  - Perfect for presenting to audiences
+
+### 💾 Enhanced Save System (File Format v2.1)
+
+- **Complete Settings Export** - All preferences now saved:
+  - Project name and metadata
+  - Canvas state (zoom, pan position)
+  - Animation speeds (cards and groups)
+  - Card backdrop opacity
+  - Group settings (thumbnails, expansion, colors)
+  - Layout configuration and guide customizations
+
+- **New File Naming Convention**:
+  - Format: `showcase-presentationName-YYYY-MM-DD-hh-mm-ss.json`
+  - Example: `showcase-my-portfolio-2025-12-04-15-30-45.json`
+  - Sanitized names (lowercase, hyphens, no special chars)
+
+### 🎬 Animation Settings
+
+- **Configurable Card Animation Speed** - Settings > Card Settings
+  - Slow (0.5x), Normal (1x), Fast (1.5x), Very Fast (2x)
+  - Affects card entrance/exit animations
+
+- **Configurable Group Animation Speed** - Settings > Group Settings
+  - Controls expand/collapse transition speed
+  - Affects thumbnail grid animations
+
+### 🔧 Technical Improvements
+
+- Centralized `buildPresentationData()` function for consistent exports
+- Improved `loadPresentationData()` with full settings restoration
+- Backwards-compatible file loading (merges with defaults)
+
+---
+
 ## [2.3.1] - 2025-12-04
 
 ### 🎯 Group Enhancements

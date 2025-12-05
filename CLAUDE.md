@@ -65,12 +65,16 @@ showcase/
 
 ### State Management (Zustand)
 
-**Global State Tree:**
+**Global State Tree (v2.4.0):**
 ```javascript
 {
+  // Project Metadata
+  projectName: '',        // Editable presentation name
+
   // Content
   cards: [],              // Media cards (images/videos)
   textFields: [],         // Text elements
+  groups: [],             // Group containers for organizing cards
 
   // UI State
   background: {},         // Color/gradient/image with effects
@@ -82,14 +86,26 @@ showcase/
   activeLayout: null,     // 'circle' | 'grid' | 'line' | etc.
   layoutSettings: {},     // Guide colors & styles
 
+  // Animation & Appearance
+  cardAnimationSpeed: 1,  // Card animation speed multiplier (0.5-2)
+  cardBackdropOpacity: 0.7, // Backdrop opacity when card maximized
+  groupSettings: {        // Global group defaults
+    thumbnailSize: 60,
+    animationSpeed: 1,
+    // ...more settings
+  },
+
   // Editing
   editingTextField: null, // Currently editing text
   maximizedCard: null,    // Fullscreen card view
+  selectedGroupId: null,  // Currently selected group
 
   // Storage
   isSaving: false,
   lastSaved: null,
-  storageError: null
+  lastSavedFileName: null,
+  storageError: null,
+  autoSaveEnabled: true
 }
 ```
 

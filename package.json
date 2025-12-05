@@ -1,6 +1,6 @@
 {
   "name": "showcase",
-  "version": "1.0.0",
+  "version": "2.4.0",
   "description": "A modern, flexible presentation web application that breaks free from traditional slide-based presentations. Create dynamic, interactive presentations with images and videos that you can arrange freely in a customizable playfield.",
   "type": "module",
   "scripts": {

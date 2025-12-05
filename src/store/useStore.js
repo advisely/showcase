@@ -53,6 +53,48 @@ const useStore = create((set, get) => ({
   editingGroupId: null,
   groupSettingsModalOpen: false,
 
+  // Global Group Settings (configurable defaults)
+  groupSettings: {
+    // Thumbnail view settings
+    thumbnailSize: 60, // Size in pixels (40-100)
+    thumbnailGap: 8, // Gap between thumbnails (4-16)
+
+    // Expanded view settings
+    expandedCardMaxWidth: 250, // Max card width when expanded (150-400)
+    expandedCardSpacing: 20, // Spacing between expanded cards (10-40)
+    expansionMultiplier: 2, // How much group grows when expanded (1.5-3)
+
+    // Appearance settings
+    backgroundBlur: 12, // Backdrop blur in pixels (0-20)
+    defaultBackgroundOpacity: 0.2, // Default opacity for new groups (0-0.5)
+    defaultBorderStyle: 'dashed', // 'solid' | 'dashed' | 'dotted' | 'none'
+
+    // Animation settings
+    animationSpeed: 1, // Speed multiplier (0.5 = slow, 1 = normal, 2 = fast)
+
+    // Fullscreen title display duration (in seconds, 0 = always visible)
+    fullscreenTitleDuration: 2, // How long the group title shows in fullscreen view
+
+    // Default size for new groups
+    defaultWidth: 300,
+    defaultHeight: 250,
+
+    // Color palette for new groups
+    colorPalette: [
+      '#3498db', // Blue
+      '#9b59b6', // Purple
+      '#27ae60', // Green
+      '#f39c12', // Orange
+      '#e74c3c', // Red
+      '#1abc9c', // Teal
+      '#e91e63', // Pink
+      '#00bcd4', // Cyan
+    ],
+  },
+
+  // Card animation settings
+  cardAnimationSpeed: 1, // Speed multiplier (0.5 = slow, 1 = normal, 2 = fast)
+
   // Actions
   addCard: (cardData) => {
     const state = get();
@@ -132,6 +174,38 @@ const useStore = create((set, get) => ({
 
   resetView: () => set({ zoomLevel: 1, panX: 0, panY: 0 }),
 
+  // Create a new blank presentation (clears all content)
+  newPresentation: () => set({
+    cards: [],
+    textFields: [],
+    groups: [],
+    currentCardId: 0,
+    currentTextFieldId: 0,
+    currentGroupId: 0,
+    videoFiles: {},
+    background: {
+      color: '#2c3e50',
+      image: null,
+      mode: 'color',
+      gradientColor: '#34495e',
+      gradientAngle: 135,
+      opacity: 0.3,
+      blur: 0
+    },
+    zoomLevel: 1,
+    panX: 0,
+    panY: 0,
+    activeLayout: null,
+    maximizedCard: null,
+    projectName: 'Untitled Presentation',
+    lastSaved: null,
+    lastSavedFileName: null,
+    storageError: null,
+    editingTextField: null,
+    selectedGroupId: null,
+    editingGroupId: null,
+  }),
+
   setInteractionMode: (mode) => set({ interactionMode: mode }),
 
   toggleInteractionMode: () => set((state) => ({
@@ -163,6 +237,8 @@ const useStore = create((set, get) => ({
   setProjectName: (name) => set({ projectName: name }),
 
   setCardBackdropOpacity: (opacity) => set({ cardBackdropOpacity: opacity }),
+
+  setCardAnimationSpeed: (speed) => set({ cardAnimationSpeed: speed }),
 
   setBackgroundMenuOpen: (isOpen) => set({ backgroundMenuOpen: isOpen }),
 
@@ -211,7 +287,8 @@ const useStore = create((set, get) => ({
 
   addGroup: (groupData = {}) => {
     const state = get();
-    const colorIndex = state.groups.length % state.groupColors.length;
+    const { groupSettings } = state;
+    const colorIndex = state.groups.length % groupSettings.colorPalette.length;
 
     const newGroup = {
       id: `group-${state.currentGroupId}`,
@@ -219,15 +296,15 @@ const useStore = create((set, get) => ({
       order: state.groups.length,
       // Position on canvas
       position: groupData.position || { x: 100 + (state.groups.length * 50), y: 100 },
-      size: groupData.size || { width: 300, height: 250 }, // Collapsed size (doubles when expanded)
+      size: groupData.size || { width: groupSettings.defaultWidth, height: groupSettings.defaultHeight },
       // Visual style (user configurable)
       style: {
-        color: groupData.style?.color || state.groupColors[colorIndex],
+        color: groupData.style?.color || groupSettings.colorPalette[colorIndex],
         showHeader: groupData.style?.showHeader ?? true,
         showBoundary: groupData.style?.showBoundary ?? true,
-        boundaryStyle: groupData.style?.boundaryStyle || 'dashed', // 'solid' | 'dashed' | 'dotted' | 'none'
+        boundaryStyle: groupData.style?.boundaryStyle || groupSettings.defaultBorderStyle,
         backgroundColor: groupData.style?.backgroundColor || null, // null = auto from color
-        backgroundOpacity: groupData.style?.backgroundOpacity ?? 0.2,
+        backgroundOpacity: groupData.style?.backgroundOpacity ?? groupSettings.defaultBackgroundOpacity,
         cardIndicator: groupData.style?.cardIndicator || 'dot', // 'dot' | 'border' | 'banner' | 'tint' | 'none'
       },
       // Layout within this group
@@ -313,15 +390,30 @@ const useStore = create((set, get) => ({
 
   setGroupSettingsModalOpen: (isOpen) => set({ groupSettingsModalOpen: isOpen }),
 
+  // Update global group settings
+  setGroupSettings: (settings) => set((state) => ({
+    groupSettings: { ...state.groupSettings, ...settings }
+  })),
+
+  // Update a single color in the palette
+  updateGroupColorPalette: (index, color) => set((state) => {
+    const newPalette = [...state.groupSettings.colorPalette];
+    newPalette[index] = color;
+    return {
+      groupSettings: { ...state.groupSettings, colorPalette: newPalette }
+    };
+  }),
+
   // Toggle group expanded state (thumbnail view vs full-size cards)
-  // When expanding: double the group size and arrange cards in a grid inside
-  // When collapsing: halve the group size back
+  // When expanding: grow group size and arrange cards in a grid inside
+  // When collapsing: shrink group size back
   toggleGroupExpanded: (groupId) => set((state) => {
     const group = state.groups.find(g => g.id === groupId);
     if (!group) return state;
 
+    const { groupSettings } = state;
     const isExpanding = !group.expanded;
-    const sizeMultiplier = isExpanding ? 2 : 0.5;
+    const sizeMultiplier = isExpanding ? groupSettings.expansionMultiplier : (1 / groupSettings.expansionMultiplier);
 
     // Calculate new group size
     const newGroupSize = {
@@ -336,7 +428,7 @@ const useStore = create((set, get) => ({
       if (groupCards.length > 0) {
         const padding = 20;
         const headerHeight = group.style?.showHeader ? 50 : 10;
-        const spacing = 20;
+        const spacing = groupSettings.expandedCardSpacing;
 
         // Calculate available space in expanded group
         const availableWidth = newGroupSize.width - padding * 2;
@@ -345,8 +437,8 @@ const useStore = create((set, get) => ({
         const cardCount = groupCards.length;
         const cols = Math.ceil(Math.sqrt(cardCount));
 
-        // Calculate card size to fit in grid with spacing
-        const cardWidth = Math.min(250, (availableWidth - (cols - 1) * spacing) / cols);
+        // Calculate card size to fit in grid with spacing (using configurable max width)
+        const cardWidth = Math.min(groupSettings.expandedCardMaxWidth, (availableWidth - (cols - 1) * spacing) / cols);
         const cardHeight = cardWidth * 0.67; // Maintain aspect ratio
 
         // Position each card in the grid
@@ -374,6 +466,8 @@ const useStore = create((set, get) => ({
 
     return {
       cards: updatedCards,
+      // When expanding, select the group to bring it to front
+      selectedGroupId: isExpanding ? groupId : state.selectedGroupId,
       groups: state.groups.map(g =>
         g.id === groupId
           ? {
@@ -946,20 +1040,34 @@ const useStore = create((set, get) => ({
 
     try {
       const data = {
+        // Project metadata
+        version: '2.1',
+        projectName: state.projectName,
+        timestamp: Date.now(),
+
+        // Canvas settings
         background: state.background,
+        zoomLevel: state.zoomLevel,
+        panX: state.panX,
+        panY: state.panY,
+
+        // Layout settings
+        activeLayout: state.activeLayout,
+        layoutSettings: state.layoutSettings,
+
+        // Animation & appearance settings
+        cardAnimationSpeed: state.cardAnimationSpeed,
+        cardBackdropOpacity: state.cardBackdropOpacity,
+        groupSettings: state.groupSettings,
+
+        // Content
         cards: state.cards.map(card => ({
           ...card,
           // Don't save video files to storage, only metadata
           mediaSrc: card.mediaType === 'video' ? null : card.mediaSrc
         })),
         textFields: state.textFields,
-        groups: state.groups, // Save groups
-        zoomLevel: state.zoomLevel,
-        panX: state.panX,
-        panY: state.panY,
-        activeLayout: state.activeLayout,
-        layoutSettings: state.layoutSettings,
-        timestamp: Date.now()
+        groups: state.groups,
       };
 
       await savePresentation('current', data);
@@ -1039,16 +1147,35 @@ const useStore = create((set, get) => ({
           }
         });
 
+        // Merge saved groupSettings with defaults (so new settings are available after update)
+        const defaultGroupSettings = get().groupSettings;
+        const savedGroupSettings = data.groupSettings || {};
+
         set({
-          cards,
-          textFields: data.textFields || [],
-          groups,
+          // Project metadata
+          projectName: data.projectName || '',
+
+          // Canvas settings
           background: data.background || { color: '#2c3e50', image: null },
           zoomLevel: data.zoomLevel || 1,
           panX: data.panX || 0,
           panY: data.panY || 0,
+
+          // Layout settings
           activeLayout: data.activeLayout || null,
           layoutSettings: data.layoutSettings || { strokeWidth: 4, color: 'rgba(0, 255, 255, 0.8)' },
+
+          // Animation & appearance settings
+          cardAnimationSpeed: data.cardAnimationSpeed ?? 1,
+          cardBackdropOpacity: data.cardBackdropOpacity ?? 0.7,
+          groupSettings: { ...defaultGroupSettings, ...savedGroupSettings },
+
+          // Content
+          cards,
+          textFields: data.textFields || [],
+          groups,
+
+          // ID counters
           currentCardId: maxCardId,
           currentTextFieldId: maxTextFieldId,
           currentGroupId: maxGroupId,

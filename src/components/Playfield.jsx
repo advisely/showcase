@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
-import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
+import { AnimatePresence } from 'framer-motion';
+import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor, pointerWithin, rectIntersection } from '@dnd-kit/core';
 import throttle from 'lodash.throttle';
 import useStore from '../store/useStore';
 import Card from './Card';
@@ -8,6 +9,36 @@ import LayoutGuides from './LayoutGuides';
 import TextField from './TextField';
 import GroupsPanel from './GroupsPanel';
 import GroupSettingsModal from './GroupSettingsModal';
+
+/**
+ * Custom collision detection that respects visual z-index for overlapping droppables.
+ * When multiple groups overlap, this ensures the drop targets the visually topmost group.
+ */
+const zIndexAwareCollisionDetection = (args) => {
+  const { droppableContainers } = args;
+
+  // First, find droppables where pointer is within bounds (most accurate for overlapping)
+  const pointerCollisions = pointerWithin(args);
+
+  if (pointerCollisions.length > 0) {
+    // If multiple droppables contain the pointer, sort by z-index (descending)
+    // Groups pass their zIndex in the data prop
+    const sorted = [...pointerCollisions].sort((a, b) => {
+      // droppableContainers is an array, find by id
+      const aContainer = droppableContainers.find(c => c.id === a.id);
+      const bContainer = droppableContainers.find(c => c.id === b.id);
+      const aZIndex = aContainer?.data?.current?.zIndex || 0;
+      const bZIndex = bContainer?.data?.current?.zIndex || 0;
+      return bZIndex - aZIndex; // Higher z-index first
+    });
+
+    // Return only the topmost droppable to prevent dropping on obscured groups
+    return [sorted[0]];
+  }
+
+  // Fallback to rect intersection for cases where pointer isn't directly over a droppable
+  return rectIntersection(args);
+};
 
 const Playfield = () => {
   const playfieldRef = useRef(null);
@@ -19,6 +50,7 @@ const Playfield = () => {
   const cards = useStore(state => state.cards);
   const textFields = useStore(state => state.textFields);
   const groups = useStore(state => state.groups);
+  const selectedGroupId = useStore(state => state.selectedGroupId);
   const background = useStore(state => state.background);
   const zoomLevel = useStore(state => state.zoomLevel);
   const panX = useStore(state => state.panX);
@@ -28,6 +60,7 @@ const Playfield = () => {
   const updateTextField = useStore(state => state.updateTextField);
   const moveGroupWithCards = useStore(state => state.moveGroupWithCards);
   const assignCardToGroup = useStore(state => state.assignCardToGroup);
+  const toggleGroupExpanded = useStore(state => state.toggleGroupExpanded);
   const setPan = useStore(state => state.setPan);
   const setZoom = useStore(state => state.setZoom);
   const saveToStorage = useStore(state => state.saveToStorage);
@@ -88,10 +121,15 @@ const Playfield = () => {
       if (over) {
         const overGroup = groups.find(g => g.id === over.id);
         if (overGroup && card.groupId !== overGroup.id) {
+          // Assign card to group - this sets groupId and positions card inside group
+          // Exit early to avoid conflicting position update
           assignCardToGroup(card.id, overGroup.id);
+          saveToStorage();
+          return;
         }
       }
 
+      // Only update position for cards NOT being dropped on a group
       updateCard(card.id, {
         position: {
           x: (card.position?.x || 0) + deltaX,
@@ -113,6 +151,19 @@ const Playfield = () => {
         }
       });
 
+      saveToStorage();
+    }
+  };
+
+  // Handle click on empty playfield space to collapse expanded groups
+  const handlePlayfieldClick = (e) => {
+    // Only handle clicks directly on the playfield (empty space)
+    if (e.target !== playfieldRef.current) return;
+
+    // Find any expanded group and collapse it
+    const expandedGroup = groups.find(g => g.expanded);
+    if (expandedGroup) {
+      toggleGroupExpanded(expandedGroup.id);
       saveToStorage();
     }
   };
@@ -311,7 +362,20 @@ const Playfield = () => {
 
   // Sort groups by order for consistent z-index layering
   // Expanded groups get higher z-index to appear on top
+  // Selected group gets highest z-index among expanded groups
   const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+
+  // Calculate z-index for a group:
+  // - Collapsed groups: 1-99 (based on order)
+  // - Expanded groups: 100-149 (based on order)
+  // - Selected expanded group: 150 (always on top of other expanded groups)
+  const getGroupZIndex = (group, index) => {
+    const isSelected = group.id === selectedGroupId;
+    if (group.expanded) {
+      return isSelected ? 150 : 100 + index;
+    }
+    return index + 1;
+  };
 
   // Filter cards: hide cards that are in non-expanded groups (they show as thumbnails inside the group)
   const visibleCards = cards.filter(card => {
@@ -327,23 +391,27 @@ const Playfield = () => {
       className="playfield"
       style={playfieldStyle}
       onMouseDown={handleMouseDown}
+      onClick={handlePlayfieldClick}
       onDragStart={(e) => e.preventDefault()}
     >
       <LayoutGuides />
       {/* Render groups first (behind cards) */}
-      {/* Expanded groups get zIndex boost (100+) to appear above collapsed groups */}
+      {/* Expanded groups get zIndex boost (100+), selected expanded group gets 150 */}
       {sortedGroups.map((group, index) => (
         <GroupContainer
           key={group.id}
           group={group}
-          zIndex={group.expanded ? 100 + index : index + 1}
+          zIndex={getGroupZIndex(group, index)}
         />
       ))}
       {/* Cards render above groups - only visible/expanded cards */}
       {/* Cards from expanded groups get higher zIndex (200+) to appear above expanded group containers */}
-      {visibleCards.map((card, index) => (
-        <Card key={card.id} card={card} zIndex={200 + index} />
-      ))}
+      {/* AnimatePresence enables exit animations when cards hide during group collapse */}
+      <AnimatePresence mode="popLayout">
+        {visibleCards.map((card, index) => (
+          <Card key={card.id} card={card} zIndex={200 + index} />
+        ))}
+      </AnimatePresence>
       {/* Text fields above cards */}
       {textFields.map((textField, index) => (
         <TextField key={textField.id} textField={textField} zIndex={300 + index} />
@@ -399,6 +467,7 @@ const Playfield = () => {
       {isDndEnabled ? (
         <DndContext
           sensors={sensors}
+          collisionDetection={zIndexAwareCollisionDetection}
           onDragEnd={handleDragEnd}
           autoScroll={false}
         >

@@ -2,7 +2,7 @@
 
 > Transform your ideas into stunning visual presentations with drag-and-drop simplicity and professional polish.
 
-![Version](https://img.shields.io/badge/version-2.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-2.4.0-blue.svg)
 ![React](https://img.shields.io/badge/React-19-61dafb.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -181,6 +181,12 @@ Click the **🎨 button** (positioned to the left of the minimap) in the bottom-
 
 ### 💾 Saving & Loading
 
+#### Presentation Name
+- **Editable title** in the top toolbar - click to rename your presentation
+- Press **Enter** or click away to save the name
+- Press **Escape** to discard changes
+- Name is used in filename when exporting
+
 #### Auto-Save
 Your work is **automatically saved** every second to your browser's storage (IndexedDB). No "Save" button needed—just create!
 
@@ -188,16 +194,24 @@ Your work is **automatically saved** every second to your browser's storage (Ind
 
 | Button | Format | What's Included | Best For |
 |--------|--------|-----------------|----------|
-| 💾 **Save** | JSON | Embedded images & metadata | Sharing & backup |
-| 📦 **Export** | ZIP | Images embedded, videos external | Large presentations |
+| 💾 **Save** | JSON | All settings & embedded images | Sharing & backup |
+| 📦 **Export** | ZIP | Complete package with videos | Large presentations |
 | 📂 **Load** | JSON/ZIP | Everything restored | Continuing previous work |
 
-**Export includes:**
+#### File Naming Convention
+Files are saved as: `showcase-presentationName-YYYY-MM-DD-hh-mm-ss.json`
+- Example: `showcase-my-portfolio-2025-12-04-15-30-45.json`
+
+**Export includes (File Format v2.1):**
+- Project name and metadata
 - All cards with positions and sizes
 - All text fields with content, fonts, sizes, and colors
+- Groups with all settings (expanded/collapsed state, styles)
 - Background settings (color/gradient/image with opacity and blur)
-- Active layout and guide customizations (color, stroke width)
-- Zoom and pan state
+- Canvas state (zoom level, pan position)
+- Layout configuration and guide customizations
+- Animation speeds (card and group animations)
+- Card backdrop opacity settings
 - All visual states persist across sessions
 
 ---
@@ -396,6 +410,11 @@ This shouldn't happen! If it does:
 ## 🗺️ Roadmap
 
 ### Recently Added ✅
+- [x] 📝 **Editable Presentation Name** - Rename directly in toolbar (v2.4)
+- [x] 🖥️ **Fullscreen Presentation Mode** - Clean view with centered title (v2.4)
+- [x] 💾 **Enhanced Save System** - All settings now exported (v2.4)
+- [x] 📁 **Smart File Naming** - `showcase-name-YYYY-MM-DD-hh-mm-ss` format (v2.4)
+- [x] 🎬 **Configurable Animation Speeds** - Card & group settings (v2.4)
 - [x] 📑 **Groups & Organization** - Create Parts, Chapters, Sections
 - [x] 🗂️ **Thumbnail & Expanded Views** - Toggle between compact and full-size cards
 - [x] 🔄 **Auto-arrange on Expand** - Cards layout in grid when group expands

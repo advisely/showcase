@@ -4,12 +4,27 @@ import useStore from '../store/useStore';
 const CardSettings = ({ isOpen, onClose }) => {
   const cardBackdropOpacity = useStore(state => state.cardBackdropOpacity);
   const setCardBackdropOpacity = useStore(state => state.setCardBackdropOpacity);
+  const cardAnimationSpeed = useStore(state => state.cardAnimationSpeed);
+  const setCardAnimationSpeed = useStore(state => state.setCardAnimationSpeed);
   const saveToStorage = useStore(state => state.saveToStorage);
 
   const handleOpacityChange = (e) => {
     const value = parseFloat(e.target.value);
     setCardBackdropOpacity(value);
     saveToStorage();
+  };
+
+  const handleAnimationSpeedChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setCardAnimationSpeed(value);
+    saveToStorage();
+  };
+
+  const getSpeedLabel = (speed) => {
+    if (speed === 0.5) return 'Slow';
+    if (speed === 1) return 'Normal';
+    if (speed === 1.5) return 'Fast';
+    return 'Very Fast';
   };
 
   return (
@@ -95,6 +110,33 @@ const CardSettings = ({ isOpen, onClose }) => {
                   <div className="preview-card">
                     Maximized Card
                   </div>
+                </div>
+              </div>
+
+              <div className="setting-group" style={{ marginTop: 24 }}>
+                <label htmlFor="animation-speed">
+                  Animation Speed: {getSpeedLabel(cardAnimationSpeed)}
+                </label>
+                <div className="slider-container">
+                  <input
+                    id="animation-speed"
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.5"
+                    value={cardAnimationSpeed}
+                    onChange={handleAnimationSpeedChange}
+                    className="opacity-slider"
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', fontSize: 11, marginTop: 4 }}>
+                  <span>Slow</span>
+                  <span>Normal</span>
+                  <span>Fast</span>
+                  <span>Very Fast</span>
+                </div>
+                <div className="setting-hint">
+                  Controls how fast cards animate when appearing/disappearing
                 </div>
               </div>
             </div>

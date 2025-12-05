@@ -8,9 +8,12 @@ const MaximizedView = () => {
   const groups = useStore(state => state.groups);
   const setMaximizedCard = useStore(state => state.setMaximizedCard);
   const cardBackdropOpacity = useStore(state => state.cardBackdropOpacity);
+  const groupSettings = useStore(state => state.groupSettings);
 
   const [scale, setScale] = useState(1);
+  const [showGroupInfo, setShowGroupInfo] = useState(true);
   const containerRef = useRef(null);
+  const hideTimeoutRef = useRef(null);
 
   const card = cards.find(c => c.id === maximizedCard);
 
@@ -39,6 +42,34 @@ const MaximizedView = () => {
       setScale(1);
     }
   }, [hasNext, groupCards, currentIndex, setMaximizedCard]);
+
+  // Auto-hide group info based on settings
+  useEffect(() => {
+    // Clear any existing timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+
+    // Only set timer if there are group cards and duration > 0
+    if (groupCards.length > 1 && groupSettings.fullscreenTitleDuration > 0) {
+      // Show the info when card changes
+      setShowGroupInfo(true);
+
+      // Set timeout to hide
+      hideTimeoutRef.current = setTimeout(() => {
+        setShowGroupInfo(false);
+      }, groupSettings.fullscreenTitleDuration * 1000);
+    } else if (groupCards.length > 1 && groupSettings.fullscreenTitleDuration === 0) {
+      // Always visible
+      setShowGroupInfo(true);
+    }
+
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, [maximizedCard, groupCards.length, groupSettings.fullscreenTitleDuration]);
 
   useEffect(() => {
     if (!card) return;
@@ -220,37 +251,45 @@ const MaximizedView = () => {
               )}
 
               {/* Group info and card counter - positioned below the card */}
-              <div
-                style={{
-                  position: 'fixed',
-                  bottom: 80,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'rgba(255,255,255,0.15)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  padding: '10px 20px',
-                  borderRadius: 25,
-                  color: 'white',
-                  fontSize: 14,
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  zIndex: 10001,
-                }}
-              >
-                <span style={{ opacity: 0.8 }}>{groupName}</span>
-                <span style={{
-                  fontWeight: 600,
-                  background: 'rgba(255,255,255,0.2)',
-                  padding: '4px 12px',
-                  borderRadius: 12,
-                }}>
-                  {currentIndex + 1} / {groupCards.length}
-                </span>
-              </div>
+              <AnimatePresence>
+                {showGroupInfo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.3 }}
+                    style={{
+                      position: 'fixed',
+                      bottom: 80,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(255,255,255,0.15)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      padding: '10px 20px',
+                      borderRadius: 25,
+                      color: 'white',
+                      fontSize: 14,
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      zIndex: 10001,
+                    }}
+                  >
+                    <span style={{ opacity: 0.8 }}>{groupName}</span>
+                    <span style={{
+                      fontWeight: 600,
+                      background: 'rgba(255,255,255,0.2)',
+                      padding: '4px 12px',
+                      borderRadius: 12,
+                    }}>
+                      {currentIndex + 1} / {groupCards.length}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           )}
 

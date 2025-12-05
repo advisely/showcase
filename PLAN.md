@@ -8,7 +8,7 @@ Transform Showcase into the ultimate **visual storytelling platform** - not slid
 
 ---
 
-## ✅ Completed (v2.0 - Current)
+## ✅ Completed (v2.4.0 - Current)
 
 ### Core Foundation
 - [x] **React 19 Migration** - Complete rebuild from vanilla JS
@@ -39,6 +39,14 @@ Transform Showcase into the ultimate **visual storytelling platform** - not slid
 - [x] **Export Options** - JSON (embedded) & ZIP (hybrid)
 - [x] **Responsive Design** - Mobile to desktop support
 - [x] **Persistent Settings** - Layouts & guides survive reload
+
+### Presentation & Save (v2.4)
+- [x] **Editable Presentation Name** - Rename directly in toolbar
+- [x] **Fullscreen Mode** - Clean presentation view with centered title
+- [x] **Enhanced Save System** - File format v2.1 with all settings
+- [x] **Smart File Naming** - `showcase-name-YYYY-MM-DD-hh-mm-ss` format
+- [x] **Animation Speed Controls** - Configurable for cards and groups
+- [x] **Complete Settings Export** - Zoom, pan, animations, all preferences
 
 ---
 
@@ -881,6 +889,8 @@ export const getMotionProps = (prefersReducedMotion) => ({
 
 ---
 
+**Current Version:** 2.4.0
+**File Format Version:** 2.1
 **Next Review:** After Phase 1 completion
-**Last Updated:** December 2025
+**Last Updated:** December 4, 2025
 **Maintained by:** Yassine Boumiza & AI Development Team

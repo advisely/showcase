@@ -4,11 +4,15 @@ import useStore from '../store/useStore';
 
 const Minimap = () => {
   const cards = useStore(state => state.cards);
+  const groups = useStore(state => state.groups);
   const panX = useStore(state => state.panX);
   const panY = useStore(state => state.panY);
   const zoomLevel = useStore(state => state.zoomLevel);
   const setPan = useStore(state => state.setPan);
   const saveToStorage = useStore(state => state.saveToStorage);
+
+  // Filter cards: only show ungrouped cards (grouped cards are represented by their group)
+  const ungroupedCards = cards.filter(card => !card.groupId);
 
   const [isDragging, setIsDragging] = useState(false);
   const minimapRef = useRef(null);
@@ -91,8 +95,27 @@ const Minimap = () => {
         }}
       />
 
-      {/* Cards as dots */}
-      {cards.map(card => (
+      {/* Groups as colored rectangles */}
+      {groups.map(group => (
+        <div
+          key={group.id}
+          style={{
+            position: 'absolute',
+            left: (group.position?.x || 0) * scale,
+            top: (group.position?.y || 0) * scale,
+            width: (group.size?.width || 300) * scale,
+            height: (group.size?.height || 200) * scale,
+            background: group.style?.color || '#3498db',
+            borderRadius: '2px',
+            border: '1px solid rgba(255,255,255,0.5)',
+            opacity: 0.7,
+            transition: 'all 0.2s'
+          }}
+        />
+      ))}
+
+      {/* Only ungrouped cards shown (grouped cards are part of their group) */}
+      {ungroupedCards.map(card => (
         <div
           key={card.id}
           style={{
@@ -139,7 +162,7 @@ const Minimap = () => {
         Map
       </div>
 
-      {/* Card count */}
+      {/* Count */}
       <div
         style={{
           position: 'absolute',
@@ -150,7 +173,7 @@ const Minimap = () => {
           pointerEvents: 'none'
         }}
       >
-        {cards.length} cards
+        {groups.length > 0 ? `${groups.length} groups` : ''}{groups.length > 0 && ungroupedCards.length > 0 ? ' • ' : ''}{ungroupedCards.length > 0 ? `${ungroupedCards.length} cards` : ''}{groups.length === 0 && ungroupedCards.length === 0 ? `${cards.length} cards` : ''}
       </div>
     </motion.div>
   );

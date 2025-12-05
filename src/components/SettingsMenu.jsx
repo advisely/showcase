@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
-const SettingsMenu = ({ isOpen, onClose, onBackgroundSettings, onCardSettings, buttonRef }) => {
+const SettingsMenu = ({ isOpen, onClose, onBackgroundSettings, onCardSettings, onGroupSettings, buttonRef }) => {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +75,24 @@ const SettingsMenu = ({ isOpen, onClose, onBackgroundSettings, onCardSettings, b
             <div className="settings-menu-text">
               <div className="settings-menu-title">Card Settings</div>
               <div className="settings-menu-desc">Backdrop opacity</div>
+            </div>
+          </motion.button>
+
+          <div className="settings-menu-divider" />
+
+          <motion.button
+            className="settings-menu-item"
+            onClick={() => {
+              onGroupSettings();
+              onClose();
+            }}
+            whileHover={{ backgroundColor: '#3a3a3a' }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <span className="settings-menu-icon">📑</span>
+            <div className="settings-menu-text">
+              <div className="settings-menu-title">Group Settings</div>
+              <div className="settings-menu-desc">Thumbnails, expansion & colors</div>
             </div>
           </motion.button>
         </motion.div>
